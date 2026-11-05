@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { c } from '../content/en';
 import { definitions, formatValue, indicator, latest, observation, series } from '../lib/query';
 import type { DataStore } from '../lib/query';
@@ -6,6 +6,9 @@ import type { Research, Selection } from '../lib/research';
 import type { IndicatorCode } from '../lib/schema';
 import { Controls } from './Controls';
 import { Icon } from './Icon';
+import { ShareComparison } from './ShareComparison';
+import { CommonYearControl, CalculatedComparison } from './ComparisonEvidence';
+import type { ComparisonSummary } from '../lib/analysis';
 export const chartColors = ['#15645f', '#9c542e', '#575391'];
 const markers = ['circle', 'square', 'triangle'];
 export function Comparison({
@@ -15,6 +18,7 @@ export function Comparison({
   onToggle,
   onNavigate,
   onExport,
+  onRecordSummary,
 }: {
   store: DataStore;
   research: Research;
@@ -22,8 +26,10 @@ export function Comparison({
   onToggle: (code: string) => void;
   onNavigate: (view: 'explore' | 'notes') => void;
   onExport: (type: 'csv' | 'md') => void;
+  onRecordSummary: (summary: ComparisonSummary) => void;
 }) {
   const { selection } = research;
+  const chartPanel = useRef<HTMLElement>(null);
   const countries = selection.countryCodes.map((code) => store.countryByCode.get(code)!);
   const def = indicator(selection.indicatorCode),
     rows = countries.map((country) => observation(store, country.code, def.code, selection.year));
@@ -38,6 +44,7 @@ export function Comparison({
         onToggle={onToggle}
         variant="comparison"
         onChooseCountries={() => onNavigate('explore')}
+        shareControl={<ShareComparison store={store} selection={selection} />}
       />
       {countries.length < 2 ? (
         <div className="panel empty-state">
@@ -94,21 +101,36 @@ export function Comparison({
                 </tbody>
               </table>
             </div>
+            <CommonYearControl
+              store={store}
+              selection={selection}
+              onYearChange={(year) => onSelection({ year })}
+            />
             <p className="callout small">
               <Icon name="info" size={16} />
               {c.above100}
             </p>
           </section>
-          <section className="panel same-year" aria-labelledby="same-year-title">
+          <section ref={chartPanel} className="panel same-year" aria-labelledby="same-year-title">
             <div className="panel-heading">
               <div>
                 <label className="chart-indicator-field">
                   <span>{c.chartIndicator}</span>
                   <select
                     value={selection.indicatorCode}
-                    onChange={(event) =>
-                      onSelection({ indicatorCode: event.target.value as IndicatorCode })
-                    }
+                    onChange={(event) => {
+                      onSelection({ indicatorCode: event.target.value as IndicatorCode });
+                      requestAnimationFrame(() => {
+                        const result = chartPanel.current
+                          ?.querySelector('.bar-row')
+                          ?.getBoundingClientRect();
+                        if (result && (result.bottom > window.innerHeight || result.top < 0))
+                          chartPanel.current?.scrollIntoView({
+                            block: 'start',
+                            behavior: 'instant',
+                          });
+                      });
+                    }}
                   >
                     {definitions.indicators.map((item) => (
                       <option key={item.code} value={item.code}>
@@ -158,6 +180,7 @@ export function Comparison({
             </div>
             <p className="chart-limit">{def.limitation}</p>
           </section>
+          <CalculatedComparison store={store} selection={selection} onRecord={onRecordSummary} />
           <TrendChart store={store} selection={selection} />
           <section className="panel latest-panel">
             <div className="panel-heading">

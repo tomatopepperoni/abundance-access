@@ -2,9 +2,11 @@ import { c } from '../content/en';
 import { indicator } from '../lib/query';
 import type { DataStore } from '../lib/query';
 import type { Research, Selection } from '../lib/research';
-import { hasDraftText, sameSelection } from '../lib/research';
+import { hasDraftContent, sameSelection } from '../lib/research';
 import { Controls } from './Controls';
 import { Icon } from './Icon';
+import { RecordedComparison } from './ComparisonEvidence';
+import { sharingCopy as s } from '../content/sharing-en';
 export function Notebook({
   store,
   research,
@@ -15,6 +17,7 @@ export function Notebook({
   onToggle,
   onSave,
   onExport,
+  onRemoveEvidence,
 }: {
   store: DataStore;
   research: Research;
@@ -25,9 +28,10 @@ export function Notebook({
   onToggle: (code: string) => void;
   onSave: () => void;
   onExport: (type: 'csv' | 'md') => void;
+  onRemoveEvidence: () => void;
 }) {
   const { selection, draft, notes } = research;
-  const hasText = hasDraftText(draft),
+  const hasText = hasDraftContent(draft),
     context = draft.context;
   const contextSelection = context?.selection ?? selection;
   const contextChanged = Boolean(
@@ -82,6 +86,15 @@ export function Notebook({
               onClick={onConfirmContext}
             >
               {c.assignDraftContext}
+            </button>
+          </div>
+        )}
+        {draft.evidence && (
+          <div data-testid="draft-calculated-evidence" className="draft-calculated-evidence">
+            <RecordedComparison summary={draft.evidence} />
+            <p className="small muted">{s.evidenceExplanation}</p>
+            <button className="text-link" onClick={onRemoveEvidence}>
+              {s.removeEvidence}
             </button>
           </div>
         )}
@@ -162,6 +175,10 @@ export function Notebook({
                 </div>
                 <h3>{indicator(note.selection.indicatorCode).shortName}</h3>
                 <span className="small muted mono">{note.datasetRunId}</span>
+                {note.datasetRunId !== store.snapshot.runId && (
+                  <p className="callout">{s.oldEvidence}</p>
+                )}
+                {note.evidence && <RecordedComparison summary={note.evidence} />}
                 <div className="saved-note-text">
                   <div>
                     <h4>{c.factLabel}</h4>

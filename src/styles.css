@@ -1,4 +1,168 @@
 @import './tokens.css';
+.comparison-utilities {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  justify-content: space-between;
+}
+.comparison-utilities .comparison-scope {
+  margin: 0;
+}
+.share-comparison {
+  margin-left: auto;
+}
+.share-comparison > button {
+  min-height: 38px;
+  font-size: 14px;
+}
+.share-link-panel {
+  padding: 12px 0;
+  width: min(650px, 100%);
+}
+.share-link-panel label {
+  display: block;
+  margin: 10px 0;
+}
+.share-link-panel label > span {
+  display: block;
+  font-weight: 600;
+}
+.share-link-panel input {
+  width: 100%;
+  font-size: 14px;
+}
+.share-warning {
+  border: 2px solid #8b622c;
+  background: #fff7e7;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  overflow-wrap: anywhere;
+}
+.share-warning p + p,
+.share-warning button {
+  margin-top: 10px;
+}
+.comparison-completeness {
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  background: #f4f8f3;
+}
+.completeness-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.completeness-actions > span {
+  font-size: 14px;
+}
+.completeness-actions > button {
+  padding: 6px 12px;
+  min-height: 38px;
+  font-size: 14px;
+}
+.completeness-details {
+  font-size: 14px;
+  margin-top: 5px;
+}
+.completeness-details summary,
+.calculation-sources summary {
+  cursor: pointer;
+  color: var(--teal);
+  min-height: 32px;
+  padding-block: 4px;
+  font-weight: 600;
+}
+.completeness-details table {
+  width: 100%;
+  margin-top: 8px;
+}
+.calculated-comparison {
+  padding: 20px;
+}
+.calculated-comparison > .panel-heading {
+  padding: 0 0 10px;
+}
+.calculated-pairs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.calculated-pairs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+.calculated-pairs .cell-note {
+  flex-basis: 100%;
+}
+.calculated-pairs strong {
+  white-space: nowrap;
+  font-size: 19px;
+}
+.calculation-sources {
+  margin-top: 10px;
+}
+.calculation-sources > p {
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.calculation-sources article {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}
+.calculation-sources h3 {
+  font-size: 17px;
+}
+.calculation-record {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.calculation-record p {
+  flex: 1 1 240px;
+}
+.recorded-comparison {
+  padding: 12px;
+  background: #f4f8f3;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  margin-block: 12px;
+}
+.recorded-comparison h3,
+.recorded-comparison h4 {
+  font-size: 18px;
+}
+.draft-calculated-evidence > button {
+  margin-top: 8px;
+}
+@media (max-width: 650px) {
+  .comparison-completeness {
+    padding: 12px;
+  }
+  .completeness-actions > button {
+    width: 100%;
+  }
+  .calculated-comparison {
+    padding: 14px;
+  }
+  .share-comparison {
+    max-width: 100%;
+  }
+  .share-link-panel {
+    width: 100%;
+  }
+}
 * {
   box-sizing: border-box;
 }

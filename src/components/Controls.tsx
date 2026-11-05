@@ -4,6 +4,7 @@ import type { DataStore } from '../lib/query';
 import type { Selection } from '../lib/research';
 import type { IndicatorCode } from '../lib/schema';
 import { Icon } from './Icon';
+import type { ReactNode } from 'react';
 export type SelectionControls = {
   store: DataStore;
   selection: Selection;
@@ -12,6 +13,7 @@ export type SelectionControls = {
   onCompare?: () => void;
   variant?: 'default' | 'comparison';
   onChooseCountries?: () => void;
+  shareControl?: ReactNode;
 };
 export function Controls({
   store,
@@ -21,6 +23,7 @@ export function Controls({
   onCompare,
   variant = 'default',
   onChooseCountries,
+  shareControl,
 }: SelectionControls) {
   const compact = variant === 'comparison';
   return (
@@ -103,9 +106,12 @@ export function Controls({
           {selection.countryCodes.length === 3 ? c.selectionLimit : c.footerLimit}
         </p>
       )}
-      <p className={compact ? 'comparison-scope' : 'selection-help'}>
-        {compact ? c.comparisonScope : c.selectionScope}
-      </p>
+      <div className="comparison-utilities">
+        <p className={compact ? 'comparison-scope' : 'selection-help'}>
+          {compact ? c.comparisonScope : c.selectionScope}
+        </p>
+        {shareControl}
+      </div>
     </section>
   );
 }

@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-05",
+  "timezone": "America/New_York",
+  "executedPrompt": "현재 Abundance Access에 ① 국가·연도·지표를 보존하는 공유 링크 ② 선택한 국가들의 세 지표가 모두 있는 최신 공통 연도 찾기 ③ 출처와 계산 근거가 연결된 관측 요약·노트 저장을 추가한다. 결측값을 채우거나 원인을 추정하지 않는다. 핵심 흐름을 실행·검증한 뒤 GitHub Pages에 반영한다.",
+  "reviewBasis": "Three independent project reviews using verifiable evidence, limits and practical reproducibility as criteria. Not a review, prediction of opinion, or endorsement by Yorke Rhodes.",
+  "courseSource": "https://www.sps.nyu.edu/courses/GLOB1-GC2620-beyond-the-brand-harnessing-emerging-tech-in-ethical-sourcing.html",
+  "reviews": [
+    {
+      "pass": 1,
+      "focus": "Evidence, provenance and interpretation",
+      "findings": [
+        "Saved evidence from a different snapshot needed a visible warning.",
+        "CSV omitted retained rawFile, rawRow and sourceUpdatedAt fields.",
+        "Saved calculations needed indicator-specific interpretation limits."
+      ],
+      "fixes": [
+        "Added saved-note snapshot mismatch and restore-use explanation.",
+        "Exported original raw references and source update fields, with regression checks.",
+        "Displayed the indicator limitation with recorded arithmetic; completeness explicitly means availability."
+      ],
+      "status": "addressed"
+    },
+    {
+      "pass": 2,
+      "focus": "Research workflow, work preservation and visible feedback",
+      "findings": [
+        "A conflicting draft was preserved, but its notice could remain off screen after clicking the calculation transfer button.",
+        "Browser regression detected a chart result below the viewport after changing the indicator."
+      ],
+      "fixes": [
+        "Opened the unchanged existing notebook draft and showed its conflict notice in view.",
+        "Kept the changed chart and its result visible when needed, without animation or moving keyboard focus."
+      ],
+      "status": "addressed"
+    },
+    {
+      "pass": 3,
+      "focus": "Reproducibility and handoff to a new visitor",
+      "checks": [
+        "Independent sharing/analysis/evidence unit tests: 14 passed.",
+        "Only five allowed selection/snapshot fields are shared; existing notes remain private.",
+        "Different snapshots are not silently substituted.",
+        "Recorded 2022 evidence retains its values, year, snapshot and source links while the current view changes to 2025."
+      ],
+      "findings": ["README verification counts needed updating."],
+      "fixes": ["Updated verification counts and documented snapshot availability limits."],
+      "status": "no blocking defect found in reviewed scope"
+    }
+  ],
+  "verification": {
+    "unitTests": 34,
+    "desktopMobileBrowserCases": 40,
+    "browserExecution": "38-case full suite plus 2 newly added copy-success/stale-filter cases; CI runs all 40 together.",
+    "typecheck": "passed",
+    "dataValidation": "passed",
+    "productionBuild": "passed",
+    "mcp": "Actual local stdio handshake, four tools, two protocol modes and shared-snapshot equality passed."
+  },
+  "limits": [
+    "External statistics are not independently proven accurate by these code checks.",
+    "A shared link does not fetch archived snapshots; original values are reproduced only while that snapshot is available.",
+    "Country averages and differences do not establish causes or educational effects.",
+    "No Sayari data, paid service, account setup or LLM call was added.",
+    "Source collection timestamp and manual metadata review date remain unchanged."
+  ]
+}

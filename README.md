@@ -18,6 +18,12 @@ Choose **Try Korea, India and Kenya (2022)** on the overview, or select other co
 
 Selections and notes stay in browser storage. Drafts retain the country, year, indicator and snapshot recorded when writing began, even after filters change. Storage failures show **Session only**. CSV and Markdown exports keep comparison and note contexts separate.
 
+**Share this comparison** creates a validated link containing the countries, reference year, chart indicator and snapshot ID. It never includes your notes. Recipients reproduce the selection and values while the same snapshot is available. A link to another snapshot requires an explicit choice to use the currently available data; it does not retrieve archived values. Opening a shared selection preserves existing drafts and saved notes.
+
+**Use latest complete year** finds the most recent year in the included snapshot with all three indicators reported for every selected country. Availability is shown for each year; completeness does not establish methodological comparability. Missing values are never filled, and year changes require a click.
+
+**Calculated observations** shows signed same-year differences for the chart indicator in percentage points, using full source precision. It makes no ranking or causal claim. Transfer calculations and their source rows into a notebook draft, add your observations/questions separately, and save. Recorded evidence stays fixed when filters change. Conflicting unfinished drafts are preserved and opened for review. CSV and Markdown exports retain the calculation context, source URLs and raw references. [Example recorded evidence note](docs/recorded-calculation.png).
+
 ## Data and provenance
 
 The included World Bank WDI snapshot contains **217 countries/economies**, **three indicators**, and **2015–2025**: 7,161 country–indicator–year records, including **5,359 reported values** and **1,802 missing records**. Another 79 regional, income-group and world aggregates are kept separate from the country list.
@@ -52,7 +58,7 @@ npx playwright install chromium
 npm run test:e2e              # Desktop/mobile browser flows and accessibility checks
 ```
 
-Local verification covered 20 unit tests and 24 desktop/mobile browser cases, including filters, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. This is code verification, not validation of external statistics or every real device/screen-reader combination.
+Local verification covered 34 unit tests and 40 desktop/mobile browser cases, including filters, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. This is code verification, not validation of external statistics or every real device/screen-reader combination.
 
 ## Query the same data through MCP
 
@@ -83,6 +89,8 @@ Available tools: `list_countries`, `get_indicator_metadata`, `get_country_metric
 Run `npm run data:fetch` to collect a new official snapshot, then `npm run validate:data` and `npm run build`. The collector preserves raw responses and produces success/failure reports. Missing values remain missing; they are not replaced with zero or carried forward.
 
 GitHub Actions run CI on pushes and pull requests. Pages deployment and data collection are manual. A weekly/manual link check records HTTP status reports without changing content or treating 403, 429 or transient failures as deleted sources. A successful link request does not verify the linked content's accuracy.
+
+The [implementation prompt and three review passes](docs/improvement-review-2026-11-05.json) record the changes and fixes. These reviews apply evidence and reproducibility criteria inspired by the published course description; they are not a review or endorsement by Professor Rhodes.
 
 ## Interpretation and limits
 

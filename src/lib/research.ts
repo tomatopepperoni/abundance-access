@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { indicatorCodeSchema, yearSchema, type Snapshot } from './schema';
 import { defaultYear, type DataStore } from './query';
+import { comparisonSummarySchema, type ComparisonSummary } from './analysis';
 
 export const STORAGE_KEY = 'abundance-access:research:v1';
 export const RESEARCH_SCHEMA_VERSION = 2;
@@ -16,6 +17,7 @@ const noteSchema = z.object({
   selection: selectionSchema,
   facts: z.string().max(6000),
   questions: z.string().max(6000),
+  evidence: comparisonSummarySchema.optional(),
 });
 const draftContextSchema = z.object({
   selection: selectionSchema,
@@ -30,6 +32,7 @@ export const researchSchema = z.object({
     facts: z.string().max(6000),
     questions: z.string().max(6000),
     context: draftContextSchema.nullable(),
+    evidence: comparisonSummarySchema.optional(),
   }),
   notes: z.array(noteSchema).max(100),
 });
@@ -43,6 +46,8 @@ export type ResearchNote = z.infer<typeof noteSchema>;
 export const emptyDraft = (): Research['draft'] => ({ facts: '', questions: '', context: null });
 export const hasDraftText = (draft: Research['draft']) =>
   Boolean(draft.facts.trim() || draft.questions.trim());
+export const hasDraftContent = (draft: Research['draft']) =>
+  hasDraftText(draft) || Boolean(draft.evidence);
 export const sameSelection = (a: Selection, b: Selection) =>
   a.year === b.year &&
   a.indicatorCode === b.indicatorCode &&
@@ -55,8 +60,8 @@ export function editDraft(
   datasetRunId: string,
 ): Research {
   const draft = { ...research.draft, ...patch };
-  if (!hasDraftText(draft)) return { ...research, draft: emptyDraft() };
-  if (!hasDraftText(research.draft) && research.selection.countryCodes.length)
+  if (!hasDraftContent(draft)) return { ...research, draft: emptyDraft() };
+  if (!hasDraftContent(research.draft) && research.selection.countryCodes.length)
     draft.context = { selection: structuredClone(research.selection), datasetRunId };
   return { ...research, draft };
 }
@@ -81,7 +86,7 @@ export function addDraftNote(research: Research, id: string, createdAt: string):
   const { draft } = research;
   if (
     !draft.context?.selection.countryCodes.length ||
-    !hasDraftText(draft) ||
+    !hasDraftContent(draft) ||
     research.notes.length >= 100
   )
     return research;
@@ -96,10 +101,41 @@ export function addDraftNote(research: Research, id: string, createdAt: string):
         selection: structuredClone(draft.context.selection),
         facts: draft.facts,
         questions: draft.questions,
+        ...(draft.evidence ? { evidence: structuredClone(draft.evidence) } : {}),
       },
     ],
     draft: emptyDraft(),
   };
+}
+export function attachCalculatedEvidence(
+  research: Research,
+  evidence: ComparisonSummary,
+): Research {
+  const valid = comparisonSummarySchema.parse(evidence);
+  const selection: Selection = {
+    countryCodes: valid.countryCodes,
+    indicatorCode: valid.indicatorCode,
+    year: valid.year,
+  };
+  if (
+    hasDraftContent(research.draft) &&
+    (!research.draft.context ||
+      research.draft.context.datasetRunId !== valid.snapshotRunId ||
+      !sameSelection(research.draft.context.selection, selection))
+  )
+    return research;
+  return {
+    ...research,
+    draft: {
+      ...research.draft,
+      evidence: valid,
+      context: { selection: structuredClone(selection), datasetRunId: valid.snapshotRunId },
+    },
+  };
+}
+export function removeCalculatedEvidence(research: Research): Research {
+  const { evidence: _evidence, ...draft } = research.draft;
+  return { ...research, draft: hasDraftText(draft) ? draft : emptyDraft() };
 }
 export function defaultResearch(store: DataStore): Research {
   return {
@@ -140,6 +176,42 @@ export function validateResearch(value: unknown, snapshot: Snapshot): Research {
     throw new Error('Unknown saved region');
   if (new Set(data.notes.map((n) => n.id)).size !== data.notes.length)
     throw new Error('Duplicate note id');
+  for (const record of [
+    ...data.notes.map((note) => ({
+      evidence: note.evidence,
+      context: { selection: note.selection, datasetRunId: note.datasetRunId },
+    })),
+    { evidence: data.draft.evidence, context: data.draft.context },
+  ]) {
+    if (!record.evidence) continue;
+    const summary = record.evidence;
+    if (
+      !record.context ||
+      record.context.datasetRunId !== summary.snapshotRunId ||
+      !sameSelection(record.context.selection, {
+        countryCodes: summary.countryCodes,
+        indicatorCode: summary.indicatorCode,
+        year: summary.year,
+      }) ||
+      summary.countryCodes.some((code) => !countries.has(code))
+    )
+      throw new Error('Calculated evidence context mismatch');
+    if (
+      summary.snapshotRunId === snapshot.runId &&
+      summary.observations.some(
+        (row) =>
+          JSON.stringify(
+            snapshot.observations.find(
+              (source) =>
+                source.countryCode === row.countryCode &&
+                source.indicatorCode === row.indicatorCode &&
+                source.year === row.year,
+            ),
+          ) !== JSON.stringify(row),
+      )
+    )
+      throw new Error('Calculated evidence differs from the current source snapshot');
+  }
   return data;
 }
 export function loadResearch(store: DataStore, storage: Pick<Storage, 'getItem'>) {

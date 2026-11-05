@@ -5,12 +5,14 @@ import { createStore, definitions } from './lib/query';
 import type { DataStore } from './lib/query';
 import {
   addDraftNote,
+  attachCalculatedEvidence,
   assignDraftContext,
   defaultResearch,
   editDraft,
-  hasDraftText,
+  hasDraftContent,
   loadResearch,
   resetResearch,
+  removeCalculatedEvidence,
   RESEARCH_SCHEMA_VERSION,
   saveResearch,
 } from './lib/research';
@@ -22,12 +24,16 @@ import { Explorer } from './components/Explorer';
 import { Comparison } from './components/Comparison';
 import { Methods } from './components/Methods';
 import { Notebook } from './components/Notebook';
+import { readSharedComparison } from './lib/sharing';
+import type { SharedComparison } from './lib/sharing';
+import type { ComparisonSummary } from './lib/analysis';
+import { sharingCopy as s } from './content/sharing-en';
 
 type View = keyof typeof c.nav;
 const views = Object.keys(c.nav) as View[];
 const readView = (): View =>
-  views.includes(window.location.hash.slice(1) as View)
-    ? (window.location.hash.slice(1) as View)
+  views.includes(window.location.hash.slice(1).split('?')[0] as View)
+    ? (window.location.hash.slice(1).split('?')[0] as View)
     : 'overview';
 export default function App() {
   const [store, setStore] = useState<DataStore | null>(null),
@@ -92,12 +98,20 @@ function Brand() {
 }
 function Dashboard({ store }: { store: DataStore }) {
   const [loaded] = useState(() => {
+    const shared = readSharedComparison(window.location.hash, store);
+    let saved;
     try {
-      return loadResearch(store, window.localStorage);
+      saved = loadResearch(store, window.localStorage);
     } catch {
-      return { data: defaultResearch(store), status: 'unavailable' as const };
+      saved = { data: defaultResearch(store), status: 'unavailable' as const };
     }
+    return {
+      ...saved,
+      shared,
+      data: shared.status === 'ready' ? { ...saved.data, selection: shared.selection } : saved.data,
+    };
   });
+  const [shared, setShared] = useState<SharedComparison>(loaded.shared);
   const [research, setResearch] = useState(loaded.data),
     [storageAvailable, setStorageAvailable] = useState(loaded.status !== 'unavailable');
   const [view, setView] = useState<View>(readView),
@@ -119,12 +133,16 @@ function Dashboard({ store }: { store: DataStore }) {
   }, []);
   useEffect(() => {
     const handler = () => {
+      const next = readSharedComparison(window.location.hash, store);
+      setShared(next);
+      if (next.status === 'ready')
+        setResearch((previous) => ({ ...previous, selection: next.selection }));
       setView(readView());
       setNavOpen(false);
     };
     window.addEventListener('hashchange', handler);
     return () => window.removeEventListener('hashchange', handler);
-  }, []);
+  }, [store]);
   useEffect(() => {
     document.title = `${c.nav[view]} · Abundance Access`;
   }, [view]);
@@ -147,6 +165,10 @@ function Dashboard({ store }: { store: DataStore }) {
     setNotice('');
   };
   const select = (patch: Partial<Selection>) => {
+    if (window.location.hash.startsWith('#compare?')) {
+      window.history.replaceState(null, '', '#compare');
+      setShared({ status: 'none' });
+    }
     setResearch((previous) => ({ ...previous, selection: { ...previous.selection, ...patch } }));
     setNotice('');
   };
@@ -159,6 +181,10 @@ function Dashboard({ store }: { store: DataStore }) {
     setNotice('');
   };
   const toggle = (code: string) => {
+    if (window.location.hash.startsWith('#compare?')) {
+      window.history.replaceState(null, '', '#compare');
+      setShared({ status: 'none' });
+    }
     if (
       !research.selection.countryCodes.includes(code) &&
       research.selection.countryCodes.length === 3
@@ -215,7 +241,7 @@ function Dashboard({ store }: { store: DataStore }) {
   const saveNote = () => {
     if (
       !research.draft.context?.selection.countryCodes.length ||
-      !hasDraftText(research.draft) ||
+      !hasDraftContent(research.draft) ||
       research.notes.length >= 100
     )
       return;
@@ -227,7 +253,7 @@ function Dashboard({ store }: { store: DataStore }) {
   const onExport = (type: 'csv' | 'md') => {
     if (
       !research.selection.countryCodes.length &&
-      !hasDraftText(research.draft) &&
+      !hasDraftContent(research.draft) &&
       !research.notes.length
     )
       return;
@@ -236,6 +262,17 @@ function Dashboard({ store }: { store: DataStore }) {
       type === 'csv' ? exportCSV(store, research) : exportMarkdown(store, research),
       type === 'csv' ? 'text/csv;charset=utf-8' : 'text/markdown;charset=utf-8',
     );
+  };
+  const recordSummary = (summary: ComparisonSummary) => {
+    const next = attachCalculatedEvidence(research, summary);
+    if (next === research) {
+      setNotice(s.evidenceBlocked);
+      navigate('notes');
+      return;
+    }
+    setResearch(next);
+    setNotice(s.evidenceAttached);
+    navigate('notes');
   };
   const title =
     view === 'overview'
@@ -363,6 +400,30 @@ function Dashboard({ store }: { store: DataStore }) {
           <div className={`notice ${notice ? 'visible' : ''}`} role="status" aria-live="polite">
             {notice}
           </div>
+          {shared.status === 'invalid' && (
+            <div className="share-warning" role="alert">
+              {s.invalid}
+            </div>
+          )}
+          {shared.status === 'mismatch' && (
+            <div className="share-warning" role="alert">
+              <p>{s.mismatch}</p>
+              <p className="small mono">
+                {s.requested}: {shared.snapshotRunId}
+                <br />
+                {s.current}: {store.snapshot.runId}
+              </p>
+              <button
+                className="button outline compact"
+                onClick={() => {
+                  select(shared.selection);
+                  setNotice(s.currentApplied);
+                }}
+              >
+                {s.useCurrent}
+              </button>
+            </div>
+          )}
           {view === 'overview' ? (
             <>
               <section className="hero">
@@ -482,6 +543,7 @@ function Dashboard({ store }: { store: DataStore }) {
               onToggle={toggle}
               onNavigate={navigate}
               onExport={onExport}
+              onRecordSummary={recordSummary}
             />
           )}
           {view === 'methodology' && <Methods store={store} />}
@@ -496,6 +558,7 @@ function Dashboard({ store }: { store: DataStore }) {
               onToggle={toggle}
               onSave={saveNote}
               onExport={onExport}
+              onRemoveEvidence={() => setResearch((previous) => removeCalculatedEvidence(previous))}
             />
           )}
           <footer className="site-footer">
