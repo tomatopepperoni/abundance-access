@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
@@ -114,6 +114,7 @@ for (const mode of ['legacy', 'modern'] as const) {
     if (stderr.trim()) console.error(stderr);
   }
 }
+await mkdir(`${root}reports`, { recursive: true });
 await writeFile(
   `${root}reports/mcp-verification.json`,
   JSON.stringify(
