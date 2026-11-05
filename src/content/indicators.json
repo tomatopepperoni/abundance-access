@@ -1,0 +1,63 @@
+{
+  "reviewedAt": "2026-11-04",
+  "reviewMethod": "Manual review of the three World Bank WDI metadata glossary pages, API documentation, and Natural Earth terms. Collection dates are maintained separately.",
+  "distributor": "World Bank — World Development Indicators",
+  "license": "CC BY 4.0 with World Bank dataset terms; retain World Bank and original-provider attribution. The three indicator glossary records label these series CC BY 4.0; check exceptions when adding data.",
+  "licenseUrl": "https://www.worldbank.org/ext/en/legal/terms-conditions/datasets",
+  "apiDocumentationUrl": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392",
+  "indicators": [
+    {
+      "code": "IT.NET.USER.ZS",
+      "shortName": "Internet use",
+      "name": "Individuals using the Internet (% of population)",
+      "unit": "% of population",
+      "provider": "International Telecommunication Union (ITU)",
+      "providerUrl": "https://datahub.itu.int/",
+      "definition": "People who used the Internet from any location in the last three months, using any supported device.",
+      "methodology": "The indicator aggregates survey responses on individual Internet use. Country methods and estimates can vary; consult the original metadata and country notes.",
+      "limitation": "Internet use does not measure connection affordability, speed, device access, accessibility, or ability to participate in online education.",
+      "question": "How widely is the Internet used?",
+      "context": "A starting point for investigating digital access, rather than a direct measure of access to learning.",
+      "canExceed100": false,
+      "metadataUrl": "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/IT.NET.USER.ZS"
+    },
+    {
+      "code": "EG.ELC.ACCS.ZS",
+      "shortName": "Electricity access",
+      "name": "Access to electricity (% of population)",
+      "unit": "% of population",
+      "provider": "World Bank / ESMAP — SDG 7.1.1 Electrification Dataset",
+      "providerUrl": "https://trackingsdg7.esmap.org/downloads",
+      "definition": "The share of the population with access to electricity.",
+      "methodology": "The Global Electrification Database combines household surveys, censuses, and other sources. Modelled estimates may be included; access is different from the quality of service.",
+      "limitation": "Access does not establish reliable, affordable, or continuous electricity supply, or whether a learner has a usable device.",
+      "question": "How widely is electricity accessible?",
+      "context": "A basic infrastructure condition to investigate alongside local reliability and device availability.",
+      "canExceed100": false,
+      "metadataUrl": "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/EG.ELC.ACCS.ZS"
+    },
+    {
+      "code": "SE.SEC.CMPT.LO.ZS",
+      "shortName": "Lower secondary completion",
+      "name": "Lower secondary completion rate, total (% of relevant age group)",
+      "unit": "% of relevant age group",
+      "provider": "UNESCO Institute for Statistics (UIS)",
+      "providerUrl": "https://databrowser.uis.unesco.org/resources",
+      "definition": "A proxy based on new entrants to the final grade of lower secondary education, regardless of age, divided by the population at the intended entrance age for that grade.",
+      "methodology": "UIS compiles education survey data mapped to ISCED. This gross intake proxy assumes entrants complete the final grade and does not account for final-year dropout. The reference year is the year the school year ends.",
+      "limitation": "It can exceed 100% because entrants may be older or younger than the intended age. It is not a direct measure of learning quality, individual ability, or adult readiness for online education.",
+      "question": "What does the education completion proxy show?",
+      "context": "One aspect of education pathways, to investigate with local and disaggregated evidence.",
+      "canExceed100": true,
+      "metadataUrl": "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/SE.SEC.CMPT.LO.ZS"
+    }
+  ],
+  "map": {
+    "name": "Natural Earth — Admin 0 Countries, 1:110m",
+    "sourceUrl": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+    "documentationUrl": "https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/",
+    "license": "Public domain",
+    "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+    "note": "Made with Natural Earth. Boundaries are for statistical navigation and do not express a position on sovereignty. Small economies not represented at this scale remain selectable in the table."
+  }
+}

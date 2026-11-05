@@ -1,0 +1,517 @@
+import { useEffect, useLayoutEffect, useState } from 'react';
+import snapshotUrl from '../data/snapshots/latest.json?url';
+import { snapshotSchema } from './lib/schema';
+import { createStore, definitions } from './lib/query';
+import type { DataStore } from './lib/query';
+import {
+  addDraftNote,
+  assignDraftContext,
+  defaultResearch,
+  editDraft,
+  hasDraftText,
+  loadResearch,
+  resetResearch,
+  RESEARCH_SCHEMA_VERSION,
+  saveResearch,
+} from './lib/research';
+import type { Research, Selection } from './lib/research';
+import { downloadText, exportCSV, exportMarkdown } from './lib/export';
+import { c } from './content/en';
+import { Icon } from './components/Icon';
+import { Explorer } from './components/Explorer';
+import { Comparison } from './components/Comparison';
+import { Methods } from './components/Methods';
+import { Notebook } from './components/Notebook';
+
+type View = keyof typeof c.nav;
+const views = Object.keys(c.nav) as View[];
+const readView = (): View =>
+  views.includes(window.location.hash.slice(1) as View)
+    ? (window.location.hash.slice(1) as View)
+    : 'overview';
+export default function App() {
+  const [store, setStore] = useState<DataStore | null>(null),
+    [error, setError] = useState(false),
+    [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    setError(false);
+    fetch(snapshotUrl, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error('Snapshot unavailable');
+        return response.json();
+      })
+      .then((data) => {
+        if (!controller.signal.aborted) setStore(createStore(snapshotSchema.parse(data)));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setError(true);
+      });
+    return () => controller.abort();
+  }, [attempt]);
+  if (!store)
+    return (
+      <main className="load-screen">
+        <Brand />
+        <div className="panel">
+          <Icon name="database" size={32} />
+          <h1>{error ? c.loadError : c.loading}</h1>
+          {error && (
+            <button className="button dark" onClick={() => setAttempt((n) => n + 1)}>
+              {c.retry}
+            </button>
+          )}
+        </div>
+      </main>
+    );
+  return <Dashboard key={`${store.snapshot.runId}:${RESEARCH_SCHEMA_VERSION}`} store={store} />;
+}
+function Brand() {
+  return (
+    <span className="brand-lockup">
+      <span className="brand-symbol">
+        <svg width="27" height="30" viewBox="0 0 32 34" fill="none" aria-hidden="true">
+          <path
+            d="M5 27 16 6l11 21M10 20h12M16 7v22"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <span>
+        {c.brand}
+        <strong>
+          {c.brandSecond}
+          <i>.</i>
+        </strong>
+      </span>
+    </span>
+  );
+}
+function Dashboard({ store }: { store: DataStore }) {
+  const [loaded] = useState(() => {
+    try {
+      return loadResearch(store, window.localStorage);
+    } catch {
+      return { data: defaultResearch(store), status: 'unavailable' as const };
+    }
+  });
+  const [research, setResearch] = useState(loaded.data),
+    [storageAvailable, setStorageAvailable] = useState(loaded.status !== 'unavailable');
+  const [view, setView] = useState<View>(readView),
+    [navOpen, setNavOpen] = useState(false),
+    [notice, setNotice] = useState(loaded.status === 'invalid' ? c.restored : '');
+  const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 800px)').matches);
+  useEffect(() => {
+    try {
+      setStorageAvailable(saveResearch(research, window.localStorage, store));
+    } catch {
+      setStorageAvailable(false);
+    }
+  }, [research, store]);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 800px)');
+    const handler = () => setMobile(query.matches);
+    query.addEventListener('change', handler);
+    return () => query.removeEventListener('change', handler);
+  }, []);
+  useEffect(() => {
+    const handler = () => {
+      setView(readView());
+      setNavOpen(false);
+    };
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+  useEffect(() => {
+    document.title = `${c.nav[view]} · Abundance Access`;
+  }, [view]);
+  useLayoutEffect(() => {
+    if (navOpen) document.querySelector<HTMLAnchorElement>('.nav-item.active')?.focus();
+  }, [navOpen]);
+  useEffect(() => {
+    if (!navOpen) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setNavOpen(false);
+        document.getElementById('menu-toggle')?.focus();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navOpen]);
+  const update = (patch: Partial<Research>) => {
+    setResearch((previous) => ({ ...previous, ...patch }));
+    setNotice('');
+  };
+  const select = (patch: Partial<Selection>) => {
+    setResearch((previous) => ({ ...previous, selection: { ...previous.selection, ...patch } }));
+    setNotice('');
+  };
+  const changeDraft = (patch: Partial<Pick<Research['draft'], 'facts' | 'questions'>>) => {
+    setResearch((previous) => editDraft(previous, patch, store.snapshot.runId));
+    setNotice('');
+  };
+  const confirmDraftContext = () => {
+    setResearch((previous) => assignDraftContext(previous, store.snapshot.runId));
+    setNotice('');
+  };
+  const toggle = (code: string) => {
+    if (
+      !research.selection.countryCodes.includes(code) &&
+      research.selection.countryCodes.length === 3
+    ) {
+      setNotice(c.selectionLimit);
+      return;
+    }
+    setResearch((previous) => ({
+      ...previous,
+      selection: {
+        ...previous.selection,
+        countryCodes: previous.selection.countryCodes.includes(code)
+          ? previous.selection.countryCodes.filter((v) => v !== code)
+          : previous.selection.countryCodes.length < 3
+            ? [...previous.selection.countryCodes, code]
+            : previous.selection.countryCodes,
+      },
+    }));
+    setNotice('');
+  };
+  const navigate = (next: View) => {
+    setView(next);
+    window.location.hash = next;
+    setNavOpen(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    requestAnimationFrame(() =>
+      document.getElementById('main-content')?.focus({ preventScroll: true }),
+    );
+  };
+  const openExample = () => {
+    setResearch((previous) => ({
+      ...previous,
+      selection: {
+        countryCodes: ['KOR', 'IND', 'KEN'],
+        indicatorCode: 'IT.NET.USER.ZS',
+        year: 2022,
+      },
+      search: '',
+      region: 'all',
+    }));
+    setNotice('');
+    navigate('compare');
+  };
+  const reset = () => {
+    try {
+      resetResearch(window.localStorage);
+    } catch {
+      /* Memory state remains usable. */
+    }
+    setResearch(defaultResearch(store));
+    setNotice(c.resetDone);
+    navigate('overview');
+  };
+  const saveNote = () => {
+    if (
+      !research.draft.context?.selection.countryCodes.length ||
+      !hasDraftText(research.draft) ||
+      research.notes.length >= 100
+    )
+      return;
+    const createdAt = new Date().toISOString(),
+      id = crypto.randomUUID();
+    setResearch((previous) => addDraftNote(previous, id, createdAt));
+    setNotice(c.noteSaved);
+  };
+  const onExport = (type: 'csv' | 'md') => {
+    if (
+      !research.selection.countryCodes.length &&
+      !hasDraftText(research.draft) &&
+      !research.notes.length
+    )
+      return;
+    downloadText(
+      `abundance-access-${research.selection.year}.${type}`,
+      type === 'csv' ? exportCSV(store, research) : exportMarkdown(store, research),
+      type === 'csv' ? 'text/csv;charset=utf-8' : 'text/markdown;charset=utf-8',
+    );
+  };
+  const title =
+    view === 'overview'
+      ? null
+      : view === 'explore'
+        ? c.exploreTitle
+        : view === 'compare'
+          ? c.compareTitle
+          : view === 'methodology'
+            ? c.methodsTitle
+            : c.notebookTitle;
+  const body =
+    view === 'explore'
+      ? c.exploreBody
+      : view === 'compare'
+        ? c.compareBody
+        : view === 'methodology'
+          ? c.methodsBody
+          : c.notebookBody;
+  const observed = store.snapshot.observations.filter((o) => o.value !== null).length;
+  return (
+    <div className="app-shell">
+      <a
+        href="#main-content"
+        className="skip-link"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('main-content')?.focus();
+        }}
+      >
+        {c.skip}
+      </a>
+      {navOpen && mobile && (
+        <button
+          className="nav-scrim"
+          aria-label={c.closeNav}
+          onClick={() => {
+            setNavOpen(false);
+            document.getElementById('menu-toggle')?.focus();
+          }}
+        />
+      )}
+      <aside
+        className={`sidebar ${navOpen ? 'open' : ''}`}
+        aria-label={c.workspace}
+        aria-hidden={mobile && !navOpen}
+        inert={mobile && !navOpen}
+      >
+        <a
+          className="brand"
+          href="#overview"
+          aria-label={c.brandHome}
+          onClick={(event) => {
+            event.preventDefault();
+            navigate('overview');
+          }}
+        >
+          <Brand />
+        </a>
+        <p className="sidebar-tagline">{c.tagline}</p>
+        <span className="nav-label">{c.workspace}</span>
+        <nav aria-label={c.mainNav}>
+          {views.map((key) => (
+            <a
+              className={`nav-item ${view === key ? 'active' : ''}`}
+              aria-current={view === key ? 'page' : undefined}
+              key={key}
+              href={`#${key}`}
+              onClick={(event) => {
+                event.preventDefault();
+                navigate(key);
+              }}
+            >
+              <Icon name={key} />
+              <span>{c.nav[key]}</span>
+              {view === key && <i />}
+            </a>
+          ))}
+        </nav>
+        <div className="sidebar-dataset">
+          <Icon name="database" size={25} />
+          <span className="eyebrow">WORLD BANK · WDI</span>
+          <strong>2015—2025</strong>
+          <span>
+            {store.snapshot.countries.length} {c.countryCount.toLowerCase()}
+          </span>
+          <span>
+            {definitions.indicators.length} {c.annualIndicators}
+          </span>
+          <span className="dataset-kind">{c.datasetKind}</span>
+        </div>
+        <div className="sidebar-bottom">
+          <p>
+            <Icon name="info" size={16} />
+            {c.annual}
+          </p>
+          <button className="text-link reset-button" onClick={reset}>
+            <Icon name="reset" size={15} />
+            {c.reset}
+          </button>
+        </div>
+      </aside>
+      <div className="workspace">
+        <header className="topbar">
+          <button
+            id="menu-toggle"
+            className="icon-button menu-toggle"
+            aria-label={navOpen ? c.closeNav : c.openNav}
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((open) => !open)}
+          >
+            <Icon name="menu" />
+          </button>
+          <div className="breadcrumb">
+            <span>{c.breadcrumb}</span>
+            <span aria-hidden="true">/</span>
+            <strong>{c.nav[view]}</strong>
+          </div>
+          <span className={`storage-status ${storageAvailable ? '' : 'unavailable'}`}>
+            <i />
+            {storageAvailable ? c.saved : c.session}
+          </span>
+        </header>
+        <main id="main-content" tabIndex={-1} className="main-content">
+          <div className={`notice ${notice ? 'visible' : ''}`} role="status" aria-live="polite">
+            {notice}
+          </div>
+          {view === 'overview' ? (
+            <>
+              <section className="hero">
+                <div className="hero-copy">
+                  <span className="eyebrow">{c.heroEyebrow}</span>
+                  <h1>{c.heroTitle}</h1>
+                  <p>{c.heroBody}</p>
+                  <div className="hero-actions">
+                    <button className="button dark" onClick={openExample}>
+                      {c.heroCTA}
+                      <Icon name="arrow" size={18} />
+                    </button>
+                    <button className="text-link" onClick={() => navigate('explore')}>
+                      {c.exploreCTA}
+                      <Icon name="arrow" size={16} />
+                    </button>
+                  </div>
+                  <p className="purpose-summary">{c.heroLimit}</p>
+                </div>
+                <div className="hero-provenance">
+                  <Icon name="database" size={14} />
+                  <span>{c.snapshot}</span>
+                  <span>World Bank · WDI</span>
+                </div>
+              </section>
+              <section className="start-guide" aria-label={c.guideLabel}>
+                <ol>
+                  {c.guideSteps.map((step, index) => (
+                    <li key={step.title}>
+                      <span className="step-number" aria-hidden="true">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <strong>{step.title}</strong>
+                        <p>{step.body}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+              <section className="overview-stats" aria-label={c.overviewCoverage}>
+                <div>
+                  <strong>{store.snapshot.countries.length}</strong>
+                  <span>{c.countryCount}</span>
+                </div>
+                <div>
+                  <strong>{observed.toLocaleString('en')}</strong>
+                  <span>{c.observedCount}</span>
+                </div>
+                <div>
+                  <strong>2015—2025</strong>
+                  <span>{c.period}</span>
+                </div>
+                <div className="stat-dates">
+                  <span>
+                    {c.fetched}
+                    <b>{store.snapshot.fetchedAt.slice(0, 10)}</b>
+                  </span>
+                  <span>
+                    {c.reviewed}
+                    <b>{definitions.reviewedAt}</b>
+                  </span>
+                </div>
+              </section>
+              <section className="measure-section">
+                <div className="section-heading">
+                  <div>
+                    <span className="eyebrow">{c.focus}</span>
+                    <h2>{c.focusTitle}</h2>
+                  </div>
+                  <p>{c.focusBody}</p>
+                </div>
+                <div className="measure-cards">
+                  {definitions.indicators.map((def, index) => (
+                    <button
+                      key={def.code}
+                      className={`measure-card ${research.selection.indicatorCode === def.code ? 'active' : ''}`}
+                      onClick={() => select({ indicatorCode: def.code })}
+                      aria-pressed={research.selection.indicatorCode === def.code}
+                    >
+                      <span className="measure-number">
+                        0{index + 1}
+                        <Icon name="arrow" size={18} />
+                      </span>
+                      <h3>{def.shortName}</h3>
+                      <p>{c.measureDescriptions[def.code]}</p>
+                      <span className="measure-provider">{def.provider}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </>
+          ) : (
+            <section className={`page-heading ${view === 'compare' ? 'comparison-heading' : ''}`}>
+              <span className="eyebrow">{c.nav[view]}</span>
+              <h1>{title}</h1>
+              <p>{body}</p>
+            </section>
+          )}
+          {(view === 'overview' || view === 'explore') && (
+            <Explorer
+              store={store}
+              research={research}
+              onChange={update}
+              onSelection={select}
+              onToggle={toggle}
+              onNavigate={navigate}
+              onExample={openExample}
+              showExample={view === 'explore'}
+            />
+          )}
+          {view === 'compare' && (
+            <Comparison
+              store={store}
+              research={research}
+              onSelection={select}
+              onToggle={toggle}
+              onNavigate={navigate}
+              onExport={onExport}
+            />
+          )}
+          {view === 'methodology' && <Methods store={store} />}
+          {view === 'notes' && (
+            <Notebook
+              store={store}
+              research={research}
+              onDraftChange={changeDraft}
+              onConfirmContext={confirmDraftContext}
+              storageAvailable={storageAvailable}
+              onSelection={select}
+              onToggle={toggle}
+              onSave={saveNote}
+              onExport={onExport}
+            />
+          )}
+          <footer className="site-footer">
+            <span className="footer-brand">Abundance Access</span>
+            <p>{c.footer}</p>
+            <p>{c.footerLimit}</p>
+            <a
+              href="https://github.com/tomatopepperoni/abundance-access"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {c.sourceCode}
+            </a>
+          </footer>
+        </main>
+      </div>
+    </div>
+  );
+}

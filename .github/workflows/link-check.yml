@@ -1,0 +1,29 @@
+name: Check external links
+on:
+  schedule:
+    - cron: '17 14 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: external-link-check
+  cancel-in-progress: false
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check:links
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: external-link-report-${{ github.run_id }}
+          path: reports/link-check*
+          retention-days: 90
+      # No write permission, commit, link deletion, or content-review date update.

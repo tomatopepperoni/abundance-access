@@ -1,0 +1,15 @@
+node_modules
+dist
+generated_images
+video-analysis
+test-results
+playwright-report
+reports/screenshots
+package-lock.json
+
+legacy
+archive
+data/raw
+data/snapshots
+src/content/world-map.json
+overlap

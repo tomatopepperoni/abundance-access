@@ -1,0 +1,12 @@
+:root {
+  --page: #f4f7f3;
+  --ink: #17372b;
+  --muted: #4d6356;
+  --teal: #0c6a56;
+  --teal-dark: #125440;
+  --line: #bfcec2;
+  --control-line: #718b7a;
+  --selected: #dceee2;
+  --surface: #ffffff;
+  color-scheme: light;
+}

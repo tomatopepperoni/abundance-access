@@ -1,0 +1,45 @@
+{
+  "name": "abundance-access",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "typecheck": "tsc -b",
+    "validate:data": "node --import tsx scripts/validate-data.ts",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check:links": "node --import tsx scripts/check-links.ts",
+    "build": "npm run typecheck && npm run validate:data && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "check": "npm run typecheck && npm run validate:data && npm test && npm run test:mcp && npm run build",
+    "data:fetch": "node --import tsx scripts/collect-data.ts",
+    "data:map": "node --import tsx scripts/prepare-map.ts",
+    "mcp": "node --import tsx mcp/server.ts",
+    "mcp:demo": "node --import tsx scripts/demo-mcp.ts",
+    "test:mcp": "node --import tsx scripts/test-mcp.ts",
+    "format:check": "prettier --check src scripts mcp tests .github README.md package.json tsconfig.json vite.config.ts playwright.config.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@modelcontextprotocol/server": "^2.4.0",
+    "d3-geo": "^3.1.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.56.1",
+    "@types/d3-geo": "^3.1.1",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.20.6",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.7",
+    "vitest": "^4.1.12"
+  }
+}

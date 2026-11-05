@@ -1,0 +1,31 @@
+name: Collect official statistics (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: official-statistics-collection
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run data:fetch
+      - run: npm run validate:data
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: official-statistics-${{ github.run_id }}
+          path: |
+            data/raw/
+            data/snapshots/
+            reports/data-collection/
+          retention-days: 90
+      # Reports only: no automatic commit, deployment, source review, or review-date update.

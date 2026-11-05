@@ -1,0 +1,10 @@
+{
+  "sourceUrl": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+  "fetchedAt": "2026-11-05T00:19:25.724Z",
+  "preparedAt": "2026-11-05T00:33:49.013Z",
+  "rawFile": "data/raw/natural-earth-110m.geojson",
+  "sha256": "6866c877d39cba9c357620878839b336d569f8c662d3cfab4cb1dbe2d39c977f",
+  "license": "Public domain",
+  "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "transform": "Removed Antarctica; retained original polygon coordinates. Matched existing WB_A3, ISO_A3_EH, ISO_A3 and ADM0_A3 attributes against the World Bank country registry, in that order; KOS/KSV alias maps to XKX. Unmatched polygons retain ADM0_A3 and are labelled outside the registry."
+}
