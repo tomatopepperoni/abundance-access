@@ -86,8 +86,8 @@ it('exports original numeric values, explicit missing states, provenance and sep
   data.selection = { countryCodes: ['KEN', 'KOR'], year: 2022, indicatorCode: 'IT.NET.USER.ZS' };
   data.draft.facts = '=SUM(1,2)';
   data.draft.questions = 'Do rural learners have devices?';
-  const csv = exportCSV(store, data),
-    md = exportMarkdown(store, data);
+  const csv = exportCSV(store, data, 'workspace'),
+    md = exportMarkdown(store, data, 'workspace');
   expect(csv).toContain('29.40589905');
   expect(csv).toContain("'=SUM(1,2)");
   expect(csv).toContain('https://api.worldbank.org/v2/country/KEN');
@@ -168,8 +168,8 @@ it('exports comparison, draft and saved-note contexts separately without retaggi
     'snapshot-at-writing',
   );
   data.selection = { countryCodes: ['IND'], year: 2025, indicatorCode: 'EG.ELC.ACCS.ZS' };
-  const csv = exportCSV(store, data),
-    md = exportMarkdown(store, data);
+  const csv = exportCSV(store, data, 'workspace'),
+    md = exportMarkdown(store, data, 'workspace');
   const parseRow = (line: string) =>
     line.match(/"(?:[^"]|"")*"/g)!.map((cell) => cell.slice(1, -1).replaceAll('""', '"'));
   const [headers, ...rows] = csv.slice(1).split('\r\n').map(parseRow);
@@ -192,6 +192,6 @@ it('exports comparison, draft and saved-note contexts separately without retaggi
   expect(md).toContain('Draft year: 2022');
   expect(md).toContain('Draft dataset: snapshot-at-writing');
   data = { ...data, draft: { ...data.draft, context: null } };
-  expect(exportCSV(store, data)).toContain('"unassigned"');
-  expect(exportMarkdown(store, data)).toContain('Draft context: UNASSIGNED');
+  expect(exportCSV(store, data, 'workspace')).toContain('"unassigned"');
+  expect(exportMarkdown(store, data, 'workspace')).toContain('Draft context: UNASSIGNED');
 });

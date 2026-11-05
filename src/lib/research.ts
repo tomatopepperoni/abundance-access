@@ -2,6 +2,12 @@ import { z } from 'zod';
 import { indicatorCodeSchema, yearSchema, type Snapshot } from './schema';
 import { defaultYear, type DataStore } from './query';
 import { comparisonSummarySchema, type ComparisonSummary } from './analysis';
+import {
+  investigationSchema,
+  investigationTopicSchema,
+  emptyInvestigation,
+  type InvestigationTopic,
+} from './investigation';
 
 export const STORAGE_KEY = 'abundance-access:research:v1';
 export const RESEARCH_SCHEMA_VERSION = 2;
@@ -18,6 +24,7 @@ const noteSchema = z.object({
   facts: z.string().max(6000),
   questions: z.string().max(6000),
   evidence: comparisonSummarySchema.optional(),
+  investigation: investigationSchema.optional(),
 });
 const draftContextSchema = z.object({
   selection: selectionSchema,
@@ -33,6 +40,7 @@ export const researchSchema = z.object({
     questions: z.string().max(6000),
     context: draftContextSchema.nullable(),
     evidence: comparisonSummarySchema.optional(),
+    investigation: investigationSchema.optional(),
   }),
   notes: z.array(noteSchema).max(100),
 });
@@ -43,22 +51,19 @@ const legacyResearchSchema = researchSchema.extend({
 export type Selection = z.infer<typeof selectionSchema>;
 export type Research = z.infer<typeof researchSchema>;
 export type ResearchNote = z.infer<typeof noteSchema>;
+export type DraftPatch = Partial<Pick<Research['draft'], 'facts' | 'questions' | 'investigation'>>;
 export const emptyDraft = (): Research['draft'] => ({ facts: '', questions: '', context: null });
 export const hasDraftText = (draft: Research['draft']) =>
   Boolean(draft.facts.trim() || draft.questions.trim());
 export const hasDraftContent = (draft: Research['draft']) =>
-  hasDraftText(draft) || Boolean(draft.evidence);
+  hasDraftText(draft) || Boolean(draft.evidence) || Boolean(draft.investigation);
 export const sameSelection = (a: Selection, b: Selection) =>
   a.year === b.year &&
   a.indicatorCode === b.indicatorCode &&
   a.countryCodes.length === b.countryCodes.length &&
   a.countryCodes.every((code) => b.countryCodes.includes(code));
 
-export function editDraft(
-  research: Research,
-  patch: Partial<Pick<Research['draft'], 'facts' | 'questions'>>,
-  datasetRunId: string,
-): Research {
+export function editDraft(research: Research, patch: DraftPatch, datasetRunId: string): Research {
   const draft = { ...research.draft, ...patch };
   if (!hasDraftContent(draft)) return { ...research, draft: emptyDraft() };
   if (!hasDraftContent(research.draft) && research.selection.countryCodes.length)
@@ -69,7 +74,7 @@ export function editDraft(
 export function assignDraftContext(research: Research, datasetRunId: string): Research {
   if (
     research.draft.context ||
-    !hasDraftText(research.draft) ||
+    !hasDraftContent(research.draft) ||
     !research.selection.countryCodes.length
   )
     return research;
@@ -102,6 +107,7 @@ export function addDraftNote(research: Research, id: string, createdAt: string):
         facts: draft.facts,
         questions: draft.questions,
         ...(draft.evidence ? { evidence: structuredClone(draft.evidence) } : {}),
+        ...(draft.investigation ? { investigation: structuredClone(draft.investigation) } : {}),
       },
     ],
     draft: emptyDraft(),
@@ -135,7 +141,30 @@ export function attachCalculatedEvidence(
 }
 export function removeCalculatedEvidence(research: Research): Research {
   const { evidence: _evidence, ...draft } = research.draft;
-  return { ...research, draft: hasDraftText(draft) ? draft : emptyDraft() };
+  return { ...research, draft: hasDraftContent(draft) ? draft : emptyDraft() };
+}
+export function startInvestigation(
+  research: Research,
+  topic: InvestigationTopic,
+  datasetRunId: string,
+): Research {
+  investigationTopicSchema.parse(topic);
+  if (!research.selection.countryCodes.length || research.draft.investigation) return research;
+  if (
+    hasDraftContent(research.draft) &&
+    (!research.draft.context ||
+      research.draft.context.datasetRunId !== datasetRunId ||
+      !sameSelection(research.draft.context.selection, research.selection))
+  )
+    return research;
+  return {
+    ...research,
+    draft: {
+      ...research.draft,
+      investigation: emptyInvestigation(topic),
+      context: { selection: structuredClone(research.selection), datasetRunId },
+    },
+  };
 }
 export function defaultResearch(store: DataStore): Research {
   return {

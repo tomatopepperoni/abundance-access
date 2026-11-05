@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-05",
+  "purpose": "Executed implementation prompt and verification record",
+  "basis": "Project critique informed by public faculty/course descriptions; not a request, evaluation or endorsement from Yorke Rhodes. No class transcript was available.",
+  "prompt": [
+    "Improve the existing Abundance Access React/TypeScript dashboard into a clearer starting point for follow-up education-access research. Inspect and retain the current architecture, actual World Bank snapshot, local read-only MCP, accessibility and GitHub Pages support.",
+    "Keep the comparison matrix and country-change control first. After calculated observations provide a compact choice of connection costs, device access, power reliability or learning support. Let the user record target community, locality, evidence needed, source to check, verification status and decision to inform. These are user-authored investigation plans, never established findings or inferred causes.",
+    "Bind draft and saved investigation plans to the exact country/year/indicator/snapshot context. Preserve existing version-1/version-2 browser notes, text and calculated evidence. Never silently overwrite, relabel or replace an existing draft or plan.",
+    "Make export scope explicit: comparison values only (safe default), comparison with matching notes, or whole workspace. Related notes must match country set, year, indicator and snapshot. Clearly preview scope and include it in exported files. Unrelated drafts and notes must not appear in default exports. Preserve recorded contexts and provenance in broader exports.",
+    "Clarify that lower secondary completion is a school-context proxy rather than adult online-learning readiness. Distinguish data completeness from methodological comparability; do not claim country-specific survey/estimate checks were performed.",
+    "Link source observations to preserved raw responses pinned to a verified Git commit, with the manifest SHA-256 and precise zero-based record index. Keep original-provider/API links separate. Unknown snapshots or invalid references must not silently link to current data.",
+    "Do not add synthetic statistics, country rankings, causal conclusions, real-time animation, vendor integrations or LLM calls. Keep collection time, observation year and manual review date distinct and unchanged.",
+    "Test export scope and privacy, plan creation/save/reload/context conflicts/reset, backward compatibility, pinned provenance links, desktop/mobile keyboard flows, data integrity, types, actual MCP equality, production build and Pages subpath refresh. Fix observed failures, update Korean documentation, publish to the existing authorized GitHub Pages site and verify the public result. Do not send any email."
+  ],
+  "verification": {
+    "status": "local verification complete",
+    "unitTests": 51,
+    "desktopMobileCases": 48,
+    "finalSourceLinkRegressionCases": 8,
+    "typecheck": "passed",
+    "dataIntegrity": "217 countries/economies, 7161 records, 5359 numeric values and 14 raw response files validated",
+    "mcp": "Actual local stdio legacy/modern handshake, four tools, invalid-input rejection and shared-snapshot equality passed",
+    "build": "passed",
+    "limits": [
+      "Code checks do not establish external statistical truth or equivalent national methods.",
+      "Investigation status is user-authored and does not verify local sources.",
+      "Public data, collection time and manual source review date remain unchanged."
+    ],
+    "deployment": "The public deployment result is recorded separately by GitHub Actions and the local production-check report."
+  },
+  "reviews": [
+    {
+      "pass": 1,
+      "focus": "Source provenance and snapshot identity",
+      "finding": "Old recorded evidence with current-looking raw references could receive a current-snapshot archive link during workspace export.",
+      "fix": "Require the recorded snapshot ID to match the available snapshot before adding frozen source URLs or hashes; preserve older values and raw references.",
+      "verification": "Regression unit case for old snapshot evidence passed."
+    },
+    {
+      "pass": 2,
+      "focus": "Context preservation, legacy storage and explicit export privacy",
+      "result": "No blocking issue found after inspecting draft conflicts, existing plans, optional v1/v2 fields and scope defaults."
+    },
+    {
+      "pass": 3,
+      "focus": "Clarity, accessibility and evidence inspection across views",
+      "finding": "Saved notebook evidence lacked the frozen raw response link available in live comparisons.",
+      "fix": "Pass the available store to recorded evidence while retaining the snapshot identity guard.",
+      "verification": "Desktop/mobile regression confirms three source links on a saved current-snapshot comparison."
+    }
+  ]
+}

@@ -13,11 +13,15 @@ import {
   loadResearch,
   resetResearch,
   removeCalculatedEvidence,
+  startInvestigation,
   RESEARCH_SCHEMA_VERSION,
   saveResearch,
 } from './lib/research';
-import type { Research, Selection } from './lib/research';
+import type { DraftPatch, Research, Selection } from './lib/research';
+import type { InvestigationTopic } from './lib/investigation';
+import { investigationCopy as investigation } from './content/investigation-en';
 import { downloadText, exportCSV, exportMarkdown } from './lib/export';
+import type { ExportScope } from './lib/export';
 import { c } from './content/en';
 import { Icon } from './components/Icon';
 import { Explorer } from './components/Explorer';
@@ -27,6 +31,7 @@ import { Notebook } from './components/Notebook';
 import { readSharedComparison } from './lib/sharing';
 import type { SharedComparison } from './lib/sharing';
 import type { ComparisonSummary } from './lib/analysis';
+import { comparisonSummary } from './lib/analysis';
 import { sharingCopy as s } from './content/sharing-en';
 
 type View = keyof typeof c.nav;
@@ -172,7 +177,7 @@ function Dashboard({ store }: { store: DataStore }) {
     setResearch((previous) => ({ ...previous, selection: { ...previous.selection, ...patch } }));
     setNotice('');
   };
-  const changeDraft = (patch: Partial<Pick<Research['draft'], 'facts' | 'questions'>>) => {
+  const changeDraft = (patch: DraftPatch) => {
     setResearch((previous) => editDraft(previous, patch, store.snapshot.runId));
     setNotice('');
   };
@@ -250,7 +255,7 @@ function Dashboard({ store }: { store: DataStore }) {
     setResearch((previous) => addDraftNote(previous, id, createdAt));
     setNotice(c.noteSaved);
   };
-  const onExport = (type: 'csv' | 'md') => {
+  const onExport = (type: 'csv' | 'md', scope: ExportScope) => {
     if (
       !research.selection.countryCodes.length &&
       !hasDraftContent(research.draft) &&
@@ -258,8 +263,8 @@ function Dashboard({ store }: { store: DataStore }) {
     )
       return;
     downloadText(
-      `abundance-access-${research.selection.year}.${type}`,
-      type === 'csv' ? exportCSV(store, research) : exportMarkdown(store, research),
+      `abundance-access-${scope}-${research.selection.year}.${type}`,
+      type === 'csv' ? exportCSV(store, research, scope) : exportMarkdown(store, research, scope),
       type === 'csv' ? 'text/csv;charset=utf-8' : 'text/markdown;charset=utf-8',
     );
   };
@@ -272,6 +277,21 @@ function Dashboard({ store }: { store: DataStore }) {
     }
     setResearch(next);
     setNotice(s.evidenceAttached);
+    navigate('notes');
+  };
+  const investigate = (topic: InvestigationTopic) => {
+    const next = startInvestigation(research, topic, store.snapshot.runId);
+    if (next === research) {
+      setNotice(investigation.blocked);
+      navigate('notes');
+      return;
+    }
+    setResearch(
+      research.selection.countryCodes.length >= 2
+        ? attachCalculatedEvidence(next, comparisonSummary(store, research.selection))
+        : next,
+    );
+    setNotice(investigation.started);
     navigate('notes');
   };
   const title =
@@ -543,6 +563,7 @@ function Dashboard({ store }: { store: DataStore }) {
               onToggle={toggle}
               onNavigate={navigate}
               onExport={onExport}
+              onInvestigate={investigate}
               onRecordSummary={recordSummary}
             />
           )}

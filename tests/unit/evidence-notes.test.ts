@@ -52,8 +52,8 @@ it('saves evidence-only notes and keeps recorded values and exports after filter
   saved.selection = { countryCodes: ['USA', 'IND'], indicatorCode: 'EG.ELC.ACCS.ZS', year: 2025 };
   const validated = validateResearch(saved, store.snapshot);
   expect(validated.notes[0].evidence).toEqual(summary);
-  const csv = exportCSV(store, validated),
-    md = exportMarkdown(store, validated);
+  const csv = exportCSV(store, validated, 'workspace'),
+    md = exportMarkdown(store, validated, 'workspace');
   expect(csv).toContain('"calculated-comparison"');
   expect(csv).toContain('"evidence-observation"');
   expect(csv).toContain('differencePercentagePoints');

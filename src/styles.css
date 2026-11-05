@@ -1,4 +1,123 @@
 @import './tokens.css';
+.next-investigation {
+  padding: 20px;
+  border-left: 4px solid var(--teal);
+}
+.next-investigation h2 {
+  font-size: 21px;
+}
+.next-investigation > p {
+  margin-block: 6px 14px;
+}
+.investigation-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.investigation-fields,
+.investigation-add {
+  min-width: 0;
+  margin-block: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: #f4f8f3;
+}
+.investigation-fields legend {
+  font-weight: 700;
+  padding-inline: 6px;
+  font-size: 19px;
+}
+.investigation-add .investigation-topics {
+  margin-top: 12px;
+}
+.investigation-fields label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  margin-block: 12px;
+}
+.investigation-fields label > span {
+  font-weight: 600;
+}
+.investigation-fields :is(input, textarea, select) {
+  width: 100%;
+  min-width: 0;
+  font-size: 16px;
+  background: white;
+}
+.investigation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 18px;
+}
+.investigation-question {
+  border-left: 3px solid var(--teal);
+  padding-left: 12px;
+  margin-block: 12px;
+}
+.saved-investigation {
+  margin-block: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  overflow-wrap: anywhere;
+}
+.saved-investigation dd {
+  white-space: pre-wrap;
+}
+.export-controls {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  padding: 18px 20px;
+  margin-block: 18px;
+}
+.export-scope-field {
+  display: grid;
+  gap: 6px;
+  max-width: 430px;
+  font-weight: 600;
+}
+.export-scope-field select {
+  width: 100%;
+  min-width: 0;
+  font-size: 16px;
+}
+.export-controls > p {
+  margin-block: 10px;
+}
+.comparability-notice {
+  margin: 0;
+  padding: 0 20px 16px;
+  color: var(--ink);
+}
+.frozen-source-reference {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 12px;
+  overflow-wrap: anywhere;
+}
+.frozen-source-reference .provenance-hash {
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  font-size: 13px;
+}
+@media (max-width: 600px) {
+  .investigation-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .next-investigation,
+  .export-controls {
+    padding: 16px;
+  }
+  .investigation-fields,
+  .investigation-add {
+    padding: 12px;
+  }
+  .investigation-topics > button {
+    flex: 1 1 140px;
+  }
+}
 .comparison-utilities {
   display: flex;
   align-items: center;

@@ -227,14 +227,15 @@ test('real-data country selection → same-year comparison → notebook → expo
   await page.getByRole('button', { name: 'Add note with recorded context', exact: true }).click();
   await expect(page.locator('.saved-note')).toHaveCount(1);
   await expect(page.locator('.saved-note')).toContainText('KOR · KEN · IND · 2022');
+  await page.getByRole('combobox', { name: 'Export scope', exact: true }).selectOption('related');
   const download1 = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export comparison (.csv)', exact: true }).click();
+  await page.getByRole('button', { name: 'Export CSV', exact: true }).click();
   const csv = await readFile((await (await download1).path())!, 'utf8');
   expect(csv).toContain('29.40589905');
   expect(csv).toContain('affordability');
   expect(csv).toContain('https://api.worldbank.org/v2/country/KEN');
   const download2 = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export research report (.md)', exact: true }).click();
+  await page.getByRole('button', { name: 'Export Markdown', exact: true }).click();
   const md = await readFile((await (await download2).path())!, 'utf8');
   expect(md).toContain('Additional research questions');
   expect(md).toContain('2022');

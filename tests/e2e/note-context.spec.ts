@@ -94,7 +94,8 @@ test('draft context survives country, year and indicator changes, reload and sep
     page.getByRole('textbox', { name: 'Observed facts — your notes', exact: true }),
   ).toHaveValue(facts);
 
-  const csv = csvRows(await download(page, 'Export comparison (.csv)'));
+  await page.getByRole('combobox', { name: 'Export scope', exact: true }).selectOption('workspace');
+  const csv = csvRows(await download(page, 'Export CSV'));
   expect(
     csv.find((row) => row.recordType === 'observation' && row.countryCode === 'USA'),
   ).toMatchObject({
@@ -109,7 +110,7 @@ test('draft context survives country, year and indicator changes, reload and sep
     contextStatus: 'recorded',
     observedFacts: facts,
   });
-  const md = await download(page, 'Export research report (.md)');
+  const md = await download(page, 'Export Markdown');
   expect(md).toContain('- Selected year: 2025');
   expect(md).toContain('- Focused indicator: EG.ELC.ACCS.ZS');
   expect(md).toContain('Draft countries/economies: KOR, KEN');
@@ -178,7 +179,8 @@ test('legacy drafts keep their text and saved notes until their context is expli
   await expect(
     page.getByRole('textbox', { name: 'Observed facts — your notes', exact: true }),
   ).toHaveValue(legacy.draft.facts);
-  const unassigned = csvRows(await download(page, 'Export comparison (.csv)')).find(
+  await page.getByRole('combobox', { name: 'Export scope', exact: true }).selectOption('workspace');
+  const unassigned = csvRows(await download(page, 'Export CSV')).find(
     (row) => row.recordType === 'draft',
   );
   expect(unassigned).toMatchObject({
@@ -238,7 +240,8 @@ for (const storageFailure of ['get-denied', 'quota'] as const) {
     await expect(page.locator('.saved-note')).toHaveCount(1);
     await expect(page.locator('.notice')).toContainText('Note added to workspace.');
     await expect(page.locator('.note-actions')).toContainText('Session only — storage unavailable');
-    const exported = csvRows(await download(page, 'Export comparison (.csv)')).find(
+    await page.getByRole('combobox', { name: 'Export scope', exact: true }).selectOption('related');
+    const exported = csvRows(await download(page, 'Export CSV')).find(
       (row) => row.recordType === 'saved-note',
     );
     expect(exported).toMatchObject({

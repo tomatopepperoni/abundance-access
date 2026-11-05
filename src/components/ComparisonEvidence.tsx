@@ -7,6 +7,7 @@ import {
 } from '../lib/analysis';
 import { formatValue, indicator, type DataStore } from '../lib/query';
 import type { Selection } from '../lib/research';
+import { SourceReference } from './SourceReference';
 
 export function CommonYearControl({
   store,
@@ -95,7 +96,7 @@ export function CalculatedComparison({
           <p>{a.calculatedBody}</p>
         </div>
       </div>
-      <EvidenceBody summary={summary} />
+      <EvidenceBody summary={summary} store={store} />
       <div className="calculation-record">
         <button className="button outline" onClick={() => onRecord(summary)}>
           {a.record}
@@ -109,9 +110,11 @@ export function CalculatedComparison({
 function EvidenceBody({
   summary,
   testPrefix = 'calculated-gap',
+  store,
 }: {
   summary: ComparisonSummary;
   testPrefix?: string;
+  store?: DataStore;
 }) {
   return (
     <>
@@ -173,6 +176,9 @@ function EvidenceBody({
             <a className="text-link" href={row.sourceUrl} target="_blank" rel="noreferrer">
               {a.source} · {row.countryCode}
             </a>
+            {store && summary.snapshotRunId === store.snapshot.runId && (
+              <SourceReference store={store} observation={row} />
+            )}
           </article>
         ))}
       </details>
@@ -180,7 +186,13 @@ function EvidenceBody({
   );
 }
 
-export function RecordedComparison({ summary }: { summary: ComparisonSummary }) {
+export function RecordedComparison({
+  summary,
+  store,
+}: {
+  summary: ComparisonSummary;
+  store?: DataStore;
+}) {
   const definition = indicator(summary.indicatorCode);
   return (
     <section className="recorded-comparison" aria-label={a.calculated}>
@@ -190,7 +202,7 @@ export function RecordedComparison({ summary }: { summary: ComparisonSummary }) 
       </p>
       <p className="small muted">{a.recordedBody}</p>
       <p className="small recorded-limit">{definition.limitation}</p>
-      <EvidenceBody summary={summary} testPrefix="recorded-gap" />
+      <EvidenceBody summary={summary} store={store} testPrefix="recorded-gap" />
     </section>
   );
 }

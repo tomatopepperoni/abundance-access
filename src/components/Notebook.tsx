@@ -1,12 +1,15 @@
 import { c } from '../content/en';
 import { indicator } from '../lib/query';
 import type { DataStore } from '../lib/query';
-import type { Research, Selection } from '../lib/research';
+import type { DraftPatch, Research, Selection } from '../lib/research';
+import type { ExportScope } from '../lib/export';
 import { hasDraftContent, sameSelection } from '../lib/research';
 import { Controls } from './Controls';
 import { Icon } from './Icon';
 import { RecordedComparison } from './ComparisonEvidence';
 import { sharingCopy as s } from '../content/sharing-en';
+import { InvestigationFields, SavedInvestigation } from './Investigation';
+import { ExportControls } from './ExportControls';
 export function Notebook({
   store,
   research,
@@ -21,13 +24,13 @@ export function Notebook({
 }: {
   store: DataStore;
   research: Research;
-  onDraftChange: (patch: Partial<Pick<Research['draft'], 'facts' | 'questions'>>) => void;
+  onDraftChange: (patch: DraftPatch) => void;
   onConfirmContext: () => void;
   storageAvailable: boolean;
   onSelection: (patch: Partial<Selection>) => void;
   onToggle: (code: string) => void;
   onSave: () => void;
-  onExport: (type: 'csv' | 'md') => void;
+  onExport: (type: 'csv' | 'md', scope: ExportScope) => void;
   onRemoveEvidence: () => void;
 }) {
   const { selection, draft, notes } = research;
@@ -37,7 +40,6 @@ export function Notebook({
   const contextChanged = Boolean(
     hasText && context && !sameSelection(context.selection, selection),
   );
-  const exportable = Boolean(selection.countryCodes.length || hasText || notes.length);
   return (
     <>
       <Controls store={store} selection={selection} onChange={onSelection} onToggle={onToggle} />
@@ -91,13 +93,17 @@ export function Notebook({
         )}
         {draft.evidence && (
           <div data-testid="draft-calculated-evidence" className="draft-calculated-evidence">
-            <RecordedComparison summary={draft.evidence} />
+            <RecordedComparison summary={draft.evidence} store={store} />
             <p className="small muted">{s.evidenceExplanation}</p>
             <button className="text-link" onClick={onRemoveEvidence}>
               {s.removeEvidence}
             </button>
           </div>
         )}
+        <InvestigationFields
+          value={draft.investigation}
+          onChange={(investigation) => onDraftChange({ investigation })}
+        />
         <div className="note-fields">
           <label>
             <span>{c.facts}</span>
@@ -140,19 +146,7 @@ export function Notebook({
         )}
         {notes.length >= 100 && <p className="callout">{c.noteLimit}</p>}
       </section>
-      <div className="action-bar notebook-exports">
-        <div className="button-group">
-          <button className="button outline" disabled={!exportable} onClick={() => onExport('csv')}>
-            <Icon name="download" size={16} />
-            {c.exportCSV}
-          </button>
-          <button className="button outline" disabled={!exportable} onClick={() => onExport('md')}>
-            <Icon name="download" size={16} />
-            {c.exportMD}
-          </button>
-        </div>
-        <span className="small muted">{c.footerLimit}</span>
-      </div>
+      <ExportControls store={store} research={research} onExport={onExport} />
       <section aria-labelledby="saved-notes-title">
         <div className="section-heading">
           <h2 id="saved-notes-title">{c.savedNotes}</h2>
@@ -178,7 +172,8 @@ export function Notebook({
                 {note.datasetRunId !== store.snapshot.runId && (
                   <p className="callout">{s.oldEvidence}</p>
                 )}
-                {note.evidence && <RecordedComparison summary={note.evidence} />}
+                {note.evidence && <RecordedComparison summary={note.evidence} store={store} />}
+                {note.investigation && <SavedInvestigation value={note.investigation} />}
                 <div className="saved-note-text">
                   <div>
                     <h4>{c.factLabel}</h4>

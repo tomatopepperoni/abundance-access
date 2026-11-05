@@ -9,6 +9,11 @@ import { Icon } from './Icon';
 import { ShareComparison } from './ShareComparison';
 import { CommonYearControl, CalculatedComparison } from './ComparisonEvidence';
 import type { ComparisonSummary } from '../lib/analysis';
+import type { ExportScope } from '../lib/export';
+import type { InvestigationTopic } from '../lib/investigation';
+import { ExportControls } from './ExportControls';
+import { NextInvestigation } from './Investigation';
+import { ComparabilityNotice, SourceReference } from './SourceReference';
 export const chartColors = ['#15645f', '#9c542e', '#575391'];
 const markers = ['circle', 'square', 'triangle'];
 export function Comparison({
@@ -19,14 +24,16 @@ export function Comparison({
   onNavigate,
   onExport,
   onRecordSummary,
+  onInvestigate,
 }: {
   store: DataStore;
   research: Research;
   onSelection: (patch: Partial<Selection>) => void;
   onToggle: (code: string) => void;
   onNavigate: (view: 'explore' | 'notes') => void;
-  onExport: (type: 'csv' | 'md') => void;
+  onExport: (type: 'csv' | 'md', scope: ExportScope) => void;
   onRecordSummary: (summary: ComparisonSummary) => void;
+  onInvestigate: (topic: InvestigationTopic) => void;
 }) {
   const { selection } = research;
   const chartPanel = useRef<HTMLElement>(null);
@@ -110,6 +117,7 @@ export function Comparison({
               <Icon name="info" size={16} />
               {c.above100}
             </p>
+            <ComparabilityNotice />
           </section>
           <section ref={chartPanel} className="panel same-year" aria-labelledby="same-year-title">
             <div className="panel-heading">
@@ -181,6 +189,7 @@ export function Comparison({
             <p className="chart-limit">{def.limitation}</p>
           </section>
           <CalculatedComparison store={store} selection={selection} onRecord={onRecordSummary} />
+          <NextInvestigation onStart={onInvestigate} />
           <TrendChart store={store} selection={selection} />
           <section className="panel latest-panel">
             <div className="panel-heading">
@@ -249,6 +258,7 @@ export function Comparison({
                   {c.sourceLink}
                   <Icon name="external" size={13} />
                 </a>
+                <SourceReference store={store} observation={o} />
               </details>
             ))}
           </section>
@@ -277,17 +287,8 @@ export function Comparison({
               {c.notesCTA}
               <Icon name="arrow" size={17} />
             </button>
-            <div className="button-group">
-              <button className="button outline" onClick={() => onExport('csv')}>
-                <Icon name="download" size={16} />
-                {c.exportCSV}
-              </button>
-              <button className="button outline" onClick={() => onExport('md')}>
-                <Icon name="download" size={16} />
-                {c.exportMD}
-              </button>
-            </div>
           </div>
+          <ExportControls store={store} research={research} onExport={onExport} />
         </>
       )}
     </>

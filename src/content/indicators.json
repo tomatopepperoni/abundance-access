@@ -38,7 +38,7 @@
     },
     {
       "code": "SE.SEC.CMPT.LO.ZS",
-      "shortName": "Lower secondary completion",
+      "shortName": "Lower secondary completion proxy",
       "name": "Lower secondary completion rate, total (% of relevant age group)",
       "unit": "% of relevant age group",
       "provider": "UNESCO Institute for Statistics (UIS)",
@@ -46,8 +46,8 @@
       "definition": "A proxy based on new entrants to the final grade of lower secondary education, regardless of age, divided by the population at the intended entrance age for that grade.",
       "methodology": "UIS compiles education survey data mapped to ISCED. This gross intake proxy assumes entrants complete the final grade and does not account for final-year dropout. The reference year is the year the school year ends.",
       "limitation": "It can exceed 100% because entrants may be older or younger than the intended age. It is not a direct measure of learning quality, individual ability, or adult readiness for online education.",
-      "question": "What does the education completion proxy show?",
-      "context": "One aspect of education pathways, to investigate with local and disaggregated evidence.",
+      "question": "What does this proxy show about school-age education pathways?",
+      "context": "School-age education context. This does not measure the readiness of adult learners; investigate the intended learners with local and disaggregated evidence.",
       "canExceed100": true,
       "metadataUrl": "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/SE.SEC.CMPT.LO.ZS"
     }

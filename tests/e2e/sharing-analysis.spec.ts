@@ -280,7 +280,8 @@ test('complete-year selection and source-linked calculations become a separate p
   await page.reload();
   await expect(page.locator('.saved-note').first()).toContainText('KOR · IND · KEN · 2023');
   await expect(page.locator('.saved-note').first()).toContainText(difference);
-  const csv = await download(page, 'Export comparison (.csv)');
+  await page.getByRole('combobox', { name: 'Export scope', exact: true }).selectOption('workspace');
+  const csv = await download(page, 'Export CSV');
   expect(csv).toContain('2025');
   expect(csv).toContain('2023');
   expect(csv).toContain('IT.NET.USER.ZS');
@@ -295,7 +296,7 @@ test('complete-year selection and source-linked calculations become a separate p
   expect(csv).toContain(
     'https://api.worldbank.org/v2/country/KOR/indicator/IT.NET.USER.ZS?date=2023',
   );
-  const markdown = await download(page, 'Export research report (.md)');
+  const markdown = await download(page, 'Export Markdown');
   expect(markdown).toContain('Calculated observations');
   expect(markdown).toContain(difference);
   expect(markdown).toContain('User-authored observations');
