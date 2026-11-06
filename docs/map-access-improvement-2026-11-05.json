@@ -49,5 +49,10 @@
       "fix": "Use an opaque white label background, dark text and a blue focus outline with a small white halo so dark and pale value fills remain distinct. Country geometry and hit areas are unchanged.",
       "verification": "All 10 map desktop/mobile browser cases passed after the fix."
     }
-  ]
+  ],
+  "ciEnvironmentFix": {
+    "evidence": "The reviewed GitHub-hosted Ubuntu runner reported native browser libraries and Liberation fonts already installed. Only nine additional font-related packages (21.9MB) were new, and their downloads delayed the setup for several minutes.",
+    "change": "Install the locked Playwright Chromium without --with-deps, retaining all actual browser flow checks.",
+    "limit": "Relies on native libraries supplied by the hosted Ubuntu image; browser startup failures must be addressed if that image changes."
+  }
 }

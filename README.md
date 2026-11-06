@@ -112,6 +112,8 @@ Run `npm run data:fetch` to collect a new official snapshot, then `npm run valid
 
 GitHub Actions run CI on pushes and pull requests. Pages deployment and data collection are manual. A weekly/manual link check records HTTP status reports without changing content or treating 403, 429 or transient failures as deleted sources. A successful link request does not verify the linked content's accuracy.
 
+CI installs the Playwright browser from the lockfile and uses the native browser libraries and Liberation fonts supplied by the GitHub-hosted Ubuntu image. It avoids the additional system-font downloads that delayed a reviewed run. Browser launch and all desktop/mobile cases are still checked; if the runner image changes its native libraries, install the missing dependencies before retrying.
+
 The [earlier implementation and review record](docs/improvement-review-2026-11-05.json) and [follow-up research workflow prompt and checks](docs/research-workflow-improvement-2026-11-05.json) document the changes. Reviews use evidence and reproducibility criteria informed by the published course description; they are not a review or endorsement by Professor Rhodes. The connection to the class is applying provenance and evidence-handling principles to education-access research; this dashboard does not trace commercial supply chains.
 
 ## Interpretation and limits

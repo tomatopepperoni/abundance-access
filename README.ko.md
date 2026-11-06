@@ -253,6 +253,8 @@ npm run test:mcp
 
 ## 브라우저 검증
 
+GitHub CI는 고정된 의존성 버전의 Playwright 브라우저를 설치하고, 호스팅된 Ubuntu 이미지에 이미 있는 실행 라이브러리·Liberation 글꼴을 사용합니다. 실행 로그에서 추가 글꼴 21.9MB 다운로드가 수 분 지연되는 것을 확인해 CI의 일괄 시스템 의존성 설치를 제거했습니다. 실제 브라우저 실행과 전체 데스크톱·모바일 테스트는 그대로 수행합니다. 향후 실행 이미지에서 필요한 라이브러리가 빠지면 해당 의존성을 설치한 후 다시 검증해야 합니다.
+
 ```sh
 npx playwright install chromium
 npm run test:e2e
