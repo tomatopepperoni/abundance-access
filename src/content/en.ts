@@ -78,7 +78,8 @@ export const c = {
   allRegions: 'All regions',
   selected: 'Your comparison',
   selectedEmpty: 'No countries selected. Add two or three to compare.',
-  selectionLimit: 'Three countries selected. Remove one to add another.',
+  selectionLimit:
+    'Three countries selected. Search for another country and choose Replace a country.',
   selectionScope:
     'Any country in the dataset can be selected. The 3-country limit keeps charts readable; it is not a limit on data coverage.',
   comparisonScope: 'Up to 3 countries at once.',

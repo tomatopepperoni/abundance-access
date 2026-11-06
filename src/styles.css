@@ -1,4 +1,91 @@
 @import './tokens.css';
+.map-replace-control {
+  min-width: 0;
+}
+.map-replace-trigger {
+  min-height: 44px;
+  font-size: 15px;
+}
+.map-replace-dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  margin: auto;
+  padding: 24px;
+  border: 1px solid var(--control-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 16px 60px #17372b38;
+}
+.map-replace-dialog::backdrop {
+  background: #102c235f;
+}
+.map-replace-dialog h3 {
+  font-size: 23px;
+  line-height: 1.35;
+  margin: 0 0 10px;
+}
+.map-replace-options {
+  display: grid;
+  gap: 10px;
+  margin-block: 20px;
+}
+.map-replace-options > button {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  white-space: normal;
+  text-align: left;
+  font-size: 16px;
+}
+.map-replace-options strong {
+  font-weight: 600;
+}
+.map-replace-options .code {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.map-replace-cancel {
+  width: 100%;
+  min-height: 44px;
+}
+.map-replace-status {
+  margin-block: 8px 0;
+  color: var(--teal-dark);
+  overflow-wrap: anywhere;
+}
+.country-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 6px;
+}
+.country-row-actions .map-replace-trigger {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+.country-row-actions .map-replace-status {
+  max-width: 220px;
+  font-size: 13px;
+}
+.country-detail > .map-replace-control > .map-replace-trigger {
+  width: 100%;
+  margin-top: 8px;
+}
+@media (max-width: 650px) {
+  .map-replace-dialog {
+    padding: 20px;
+  }
+  .map-finder-actions > .map-replace-control {
+    flex: 1 1 145px;
+  }
+  .map-finder-actions .map-replace-trigger {
+    width: 100%;
+  }
+}
 .map-country-finder {
   padding: 12px 20px 16px;
   border-bottom: 1px solid var(--line);

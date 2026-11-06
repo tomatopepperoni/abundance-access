@@ -63,6 +63,35 @@ export const sameSelection = (a: Selection, b: Selection) =>
   a.countryCodes.length === b.countryCodes.length &&
   a.countryCodes.every((code) => b.countryCodes.includes(code));
 
+export function replaceComparisonCountry(
+  research: Research,
+  oldCode: string,
+  newCode: string,
+  snapshot: Snapshot,
+): Research {
+  const current = research.selection.countryCodes;
+  const allowed = new Set(snapshot.countries.map((country) => country.code));
+  if (
+    oldCode === newCode ||
+    current.length < 1 ||
+    current.length > 3 ||
+    new Set(current).size !== current.length ||
+    current.some((code) => !allowed.has(code)) ||
+    !allowed.has(oldCode) ||
+    !allowed.has(newCode) ||
+    !current.includes(oldCode) ||
+    current.includes(newCode)
+  )
+    return research;
+  return {
+    ...research,
+    selection: {
+      ...research.selection,
+      countryCodes: current.map((code) => (code === oldCode ? newCode : code)),
+    },
+  };
+}
+
 export function editDraft(research: Research, patch: DraftPatch, datasetRunId: string): Research {
   const draft = { ...research.draft, ...patch };
   if (!hasDraftContent(draft)) return { ...research, draft: emptyDraft() };

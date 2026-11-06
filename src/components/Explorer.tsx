@@ -15,6 +15,7 @@ import { WorldMap, worldMap } from './WorldMap';
 import { Icon } from './Icon';
 import { MapCountryFinder } from './MapCountryFinder';
 import { SourceReference } from './SourceReference';
+import { CountryReplacement } from './CountryReplacement';
 import { explorerCopy } from '../content/explorer-en';
 const mappedCodes = new Set(worldMap.features.map((feature) => feature.properties.code));
 export function Explorer({
@@ -25,6 +26,7 @@ export function Explorer({
   onToggle,
   onNavigate,
   onExample,
+  onReplace,
   showExample = true,
 }: {
   store: DataStore;
@@ -34,11 +36,17 @@ export function Explorer({
   onToggle: (code: string) => void;
   onNavigate: (view: 'compare' | 'methodology') => void;
   onExample: () => void;
+  onReplace: (oldCode: string, newCode: string) => void;
   showExample?: boolean;
 }) {
   const { selection, search, region } = research;
   const [inspected, setInspected] = useState(selection.countryCodes.at(-1) ?? 'KEN');
   const detailTitle = useRef<HTMLHeadingElement>(null);
+  const detailAction = useRef<HTMLButtonElement>(null);
+  const [replacement, setReplacement] = useState<{
+    surface: 'table' | 'detail';
+    code: string;
+  } | null>(null);
   const inspectDetails = (code: string) => {
     setInspected(code);
     requestAnimationFrame(() => {
@@ -102,6 +110,7 @@ export function Explorer({
             }
             onFocus={focusOnMap}
             onToggle={onToggle}
+            onReplace={onReplace}
           />
           <WorldMap
             store={store}
@@ -138,19 +147,39 @@ export function Explorer({
             {selection.year} · {def.unit}
           </p>
           {!isMapped && <p className="callout small">{c.mapUnavailable}</p>}
-          <button
-            className={`button ${selection.countryCodes.includes(country.code) ? 'outline' : 'dark'} full`}
-            disabled={
+          {(selection.countryCodes.includes(country.code) || selection.countryCodes.length < 3) && (
+            <button
+              ref={detailAction}
+              className={`button ${selection.countryCodes.includes(country.code) ? 'outline' : 'dark'} full`}
+              disabled={
+                !selection.countryCodes.includes(country.code) &&
+                selection.countryCodes.length === 3
+              }
+              onClick={() => onToggle(country.code)}
+            >
+              <Icon
+                name={selection.countryCodes.includes(country.code) ? 'check' : 'plus'}
+                size={17}
+              />
+              {selection.countryCodes.includes(country.code) ? c.remove : c.add} {country.code}
+            </button>
+          )}
+          <CountryReplacement
+            store={store}
+            selection={selection}
+            newCountryCode={country.code}
+            onReplace={onReplace}
+            open={replacement?.surface === 'detail' && replacement.code === country.code}
+            onOpenChange={(open) =>
+              setReplacement(open ? { surface: 'detail', code: country.code } : null)
+            }
+            onReplaced={() =>
+              requestAnimationFrame(() => detailAction.current?.focus({ preventScroll: true }))
+            }
+            primary={
               !selection.countryCodes.includes(country.code) && selection.countryCodes.length === 3
             }
-            onClick={() => onToggle(country.code)}
-          >
-            <Icon
-              name={selection.countryCodes.includes(country.code) ? 'check' : 'plus'}
-              size={17}
-            />
-            {selection.countryCodes.includes(country.code) ? c.remove : c.add} {country.code}
-          </button>
+          />
           <dl className="source-facts">
             <div>
               <dt>{c.source}</dt>
@@ -286,16 +315,42 @@ export function Explorer({
                       </span>
                     </td>
                     <td>
-                      <button
-                        className={`select-country ${selected ? 'selected' : ''}`}
-                        aria-label={`${selected ? c.remove : c.add} ${country.name}`}
-                        aria-pressed={selected}
-                        disabled={!selected && selection.countryCodes.length === 3}
-                        onClick={() => onToggle(country.code)}
-                      >
-                        <Icon name={selected ? 'check' : 'plus'} size={14} />
-                        {selected ? c.selectedLabel : c.add}
-                      </button>
+                      <div className="country-row-actions">
+                        {(selected || selection.countryCodes.length < 3) && (
+                          <button
+                            className={`select-country ${selected ? 'selected' : ''}`}
+                            aria-label={`${selected ? c.remove : c.add} ${country.name}`}
+                            aria-pressed={selected}
+                            disabled={!selected && selection.countryCodes.length === 3}
+                            onClick={() => onToggle(country.code)}
+                          >
+                            <Icon name={selected ? 'check' : 'plus'} size={14} />
+                            {selected ? c.selectedLabel : c.add}
+                          </button>
+                        )}
+                        <CountryReplacement
+                          store={store}
+                          selection={selection}
+                          newCountryCode={country.code}
+                          onReplace={onReplace}
+                          open={
+                            replacement?.surface === 'table' && replacement.code === country.code
+                          }
+                          onOpenChange={(open) =>
+                            setReplacement(open ? { surface: 'table', code: country.code } : null)
+                          }
+                          onReplaced={() =>
+                            requestAnimationFrame(() =>
+                              document
+                                .querySelector<HTMLButtonElement>(
+                                  `[data-testid="country-row-${country.code}"] .select-country`,
+                                )
+                                ?.focus({ preventScroll: true }),
+                            )
+                          }
+                          primary={!selected && selection.countryCodes.length === 3}
+                        />
+                      </div>
                     </td>
                   </tr>
                 );

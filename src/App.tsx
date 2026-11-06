@@ -13,6 +13,7 @@ import {
   loadResearch,
   resetResearch,
   removeCalculatedEvidence,
+  replaceComparisonCountry,
   startInvestigation,
   RESEARCH_SCHEMA_VERSION,
   saveResearch,
@@ -208,6 +209,14 @@ function Dashboard({ store }: { store: DataStore }) {
             : previous.selection.countryCodes,
       },
     }));
+    setNotice('');
+  };
+  const replaceCountry = (oldCode: string, newCode: string) => {
+    if (window.location.hash.startsWith('#compare?')) {
+      window.history.replaceState(null, '', '#compare');
+      setShared({ status: 'none' });
+    }
+    setResearch((previous) => replaceComparisonCountry(previous, oldCode, newCode, store.snapshot));
     setNotice('');
   };
   const navigate = (next: View) => {
@@ -552,6 +561,7 @@ function Dashboard({ store }: { store: DataStore }) {
               onToggle={toggle}
               onNavigate={navigate}
               onExample={openExample}
+              onReplace={replaceCountry}
               showExample={view === 'explore'}
             />
           )}

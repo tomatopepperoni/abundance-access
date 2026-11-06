@@ -105,7 +105,7 @@ test('an economy absent from the boundary file remains searchable, inspectable a
   await audit(page);
 });
 
-test('three-country limit restricts adding but keeps map inspection available and search can be cleared', async ({
+test('a full comparison can replace a country while keeping map inspection and search available', async ({
   page,
 }) => {
   await page.goto('./#explore');
@@ -114,17 +114,17 @@ test('three-country limit restricts adding but keeps map inspection available an
   await find(page, 'LUX');
   const row = page.getByTestId('map-finder-LUX');
   await expect(
-    row.getByRole('button', { name: 'Add Luxembourg to comparison', exact: true }),
-  ).toBeDisabled();
+    row.getByRole('button', { name: 'Replace a country with Luxembourg', exact: true }),
+  ).toBeEnabled();
   await row.getByRole('button', { name: 'Show Luxembourg on map', exact: true }).click();
   await expect(page.locator('.country-detail')).toContainText('Luxembourg');
   await expect(page.locator('.world-map > svg')).not.toHaveAttribute('data-zoom', '1');
   await expect(page.locator('.country-chips .country-chip')).toHaveCount(3);
+  await row.getByRole('button', { name: 'Replace a country with Luxembourg', exact: true }).click();
   await page
-    .locator('.country-chips')
-    .getByRole('button', { name: 'Remove Kenya', exact: true })
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Replace Kenya with Luxembourg', exact: true })
     .click();
-  await row.getByRole('button', { name: 'Add Luxembourg to comparison', exact: true }).click();
   await expect(page.locator('.country-chips .country-chip')).toHaveCount(3);
   await expect(
     row.getByRole('button', { name: 'Remove Luxembourg from comparison', exact: true }),

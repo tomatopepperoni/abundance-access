@@ -20,7 +20,17 @@ export const mapFinderCopy = {
   remove: 'Remove from comparison',
   addLabel: (country: string) => `Add ${country} to comparison`,
   removeLabel: (country: string) => `Remove ${country} from comparison`,
+  replace: 'Replace a country',
+  replaceLabel: (country: string) => `Replace a country with ${country}`,
+  replacementHeading: (country: string) => `Replace which country with ${country}?`,
+  replacementHelp:
+    'Choose one current country. It will be replaced immediately; the year and indicator stay the same.',
+  replaceChoiceLabel: (oldCountry: string, newCountry: string) =>
+    `Replace ${oldCountry} with ${newCountry}`,
+  cancelReplacement: 'Cancel replacement',
+  replaced: (oldCountry: string, newCountry: string) =>
+    `Replaced ${oldCountry} with ${newCountry}.`,
   selected: 'Selected for comparison',
-  full: 'Your comparison is full. Remove a country to add another; you can still inspect any result.',
+  full: 'Your comparison is full. Choose Replace a country to swap one without removing it first.',
   focusHelp: 'Showing or inspecting a country does not add it to your comparison.',
 } as const;

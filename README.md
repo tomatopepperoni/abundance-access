@@ -36,6 +36,8 @@ For example, a researcher can record Kenya's reported 2022 internet-use value, c
 
 Use **Find any country** above the map to search names, ISO2 or ISO3 codes. The full-size **Add to comparison** action works for all 217 registry countries/economies. **Show on map** centres and enlarges an existing boundary and moves keyboard focus to it; it does not select the country. **Inspect country** opens the country details when no boundary exists at this map scale.
 
+To swap a country, choose **Replace a country** for an unselected country in the map search results, search table or country details, then choose the existing country to replace. The change happens in one step, including when three countries are already selected. It replaces the chosen slot while preserving the other countries' order, the comparison count, observation year and indicator. **Cancel replacement** or Escape closes the chooser without changing the selection. Recorded notes, drafts and investigation plans retain their original country/year/snapshot contexts; they are not relabelled after a swap.
+
 The Natural Earth file has 176 features, of which 170 match selectable registry entries. Another 47 registry countries/economies, including Singapore, have no boundary in this file; their values and search/table selection remain available. Zoom cannot recreate absent geometry, and even 8× zoom does not make every small polygon a suitable touch target. No artificial locations or expanded country boundaries are added.
 
 Use **Zoom in / Zoom out**, the four **Pan map** buttons and **Reset world view**. Mouse dragging pans a zoomed map without changing the comparison. Touchscreens use the pan buttons; normal page scrolling is preserved and the mouse wheel does not zoom. Arrow keys browse mapped countries; Enter/Space changes selection. A country focus label and outline identify the inspected location. The three-country limit restricts adding, not inspection. Viewport/search state is temporary; comparison selection and research notes remain saved.
@@ -80,7 +82,7 @@ npx playwright install chromium
 npm run test:e2e              # Desktop/mobile browser flows and accessibility checks
 ```
 
-Local verification covered 61 unit tests and 58 desktop/mobile browser cases, including filters, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. This is code verification, not validation of external statistics or every real device/screen-reader combination.
+The verification suite contains 67 unit tests and 66 desktop/mobile browser cases, including filters, direct country replacement, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. Execution results are recorded in the test reports and GitHub Actions runs. These checks verify code, not external statistics or every real device/screen-reader combination.
 
 ## Query the same data through MCP
 

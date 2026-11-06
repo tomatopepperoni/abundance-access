@@ -4,6 +4,7 @@ import { searchMapCountries } from '../lib/map-country-search';
 import { formatValue, indicator, observation, type DataStore } from '../lib/query';
 import type { Selection } from '../lib/research';
 import { Icon } from './Icon';
+import { CountryReplacement } from './CountryReplacement';
 
 export function MapCountryFinder({
   store,
@@ -12,6 +13,7 @@ export function MapCountryFinder({
   onFocus,
   onInspect,
   onToggle,
+  onReplace,
 }: {
   store: DataStore;
   selection: Selection;
@@ -19,10 +21,12 @@ export function MapCountryFinder({
   onFocus: (countryCode: string) => void;
   onInspect: (countryCode: string) => void;
   onToggle: (countryCode: string) => void;
+  onReplace: (oldCountryCode: string, newCountryCode: string) => void;
 }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
+  const [replacing, setReplacing] = useState<string | null>(null);
   const results = searchMapCountries(store.snapshot.countries, search);
   const hasSearch = Boolean(search.trim());
   const definition = indicator(selection.indicatorCode);
@@ -43,7 +47,10 @@ export function MapCountryFinder({
             maxLength={200}
             placeholder={m.placeholder}
             aria-describedby={`${id}-scope`}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setReplacing(null);
+              setSearch(event.target.value);
+            }}
           />
         </label>
         {search && (
@@ -51,6 +58,7 @@ export function MapCountryFinder({
             className="button outline"
             onClick={() => {
               setSearch('');
+              setReplacing(null);
               input.current?.focus();
             }}
           >
@@ -104,15 +112,29 @@ export function MapCountryFinder({
                     >
                       {mapped ? m.show : m.inspect}
                     </button>
-                    <button
-                      className={`button ${selected ? 'outline' : 'dark'}`}
-                      aria-label={selected ? m.removeLabel(country.name) : m.addLabel(country.name)}
-                      aria-pressed={selected}
-                      disabled={!selected && selection.countryCodes.length >= 3}
-                      onClick={() => onToggle(country.code)}
-                    >
-                      {selected ? m.remove : m.add}
-                    </button>
+                    {(selected || selection.countryCodes.length < 3) && (
+                      <button
+                        className={`button ${selected ? 'outline' : 'dark'}`}
+                        aria-label={
+                          selected ? m.removeLabel(country.name) : m.addLabel(country.name)
+                        }
+                        aria-pressed={selected}
+                        onClick={() => onToggle(country.code)}
+                      >
+                        {selected ? m.remove : m.add}
+                      </button>
+                    )}
+                    <CountryReplacement
+                      key={`${search}:${country.code}`}
+                      store={store}
+                      selection={selection}
+                      newCountryCode={country.code}
+                      onReplace={onReplace}
+                      open={replacing === country.code}
+                      onOpenChange={(open) => setReplacing(open ? country.code : null)}
+                      onReplaced={() => input.current?.focus()}
+                      primary={selection.countryCodes.length >= 3}
+                    />
                   </div>
                 </li>
               );

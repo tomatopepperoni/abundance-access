@@ -102,17 +102,16 @@ test('countries outside the example can be compared while the three-country char
   await page
     .getByRole('textbox', { name: 'Search countries or economies', exact: true })
     .fill('USA');
-  const addUSA = page
+  const replaceUSA = page
     .getByTestId('country-row-USA')
-    .getByRole('button', { name: 'Add United States', exact: true });
-  await expect(addUSA).toBeDisabled();
+    .getByRole('button', { name: 'Replace a country with United States', exact: true });
+  await expect(replaceUSA).toBeEnabled();
   await expect(page.locator('.filter-note')).toContainText('Three countries selected');
+  await replaceUSA.click();
   await page
-    .locator('.country-chips')
-    .getByRole('button', { name: 'Remove India', exact: true })
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Replace India with United States', exact: true })
     .click();
-  await expect(addUSA).toBeEnabled();
-  await addUSA.click();
   await page.getByRole('button', { name: 'Compare selected countries', exact: true }).click();
   for (const code of ['IT.NET.USER.ZS', 'EG.ELC.ACCS.ZS', 'SE.SEC.CMPT.LO.ZS']) {
     await expect(page.getByTestId(`matrix-USA-${code}`)).toContainText(
