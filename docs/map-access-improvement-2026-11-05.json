@@ -46,7 +46,7 @@
     {
       "focus": "Accessibility and visible feedback",
       "finding": "The browser audit detected insufficient contrast in the focus label in one desktop state.",
-      "fix": "Use an opaque white label background, dark text and an explicit focused boundary outline.",
+      "fix": "Use an opaque white label background, dark text and a blue focus outline with a small white halo so dark and pale value fills remain distinct. Country geometry and hit areas are unchanged.",
       "verification": "All 10 map desktop/mobile browser cases passed after the fix."
     }
   ]

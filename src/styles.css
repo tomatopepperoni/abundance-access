@@ -109,11 +109,13 @@
   stroke-width: 3;
   stroke-dasharray: none;
   paint-order: stroke fill;
+  filter: drop-shadow(0 0 0.5px #ffffff);
 }
 .world-map .country-shape.is-map-focus {
   stroke: #1058a5;
   stroke-width: 2.5;
   paint-order: stroke fill;
+  filter: drop-shadow(0 0 0.5px #ffffff);
 }
 .world-map > svg[data-zoom]:not([data-zoom='1']) {
   cursor: grab;
