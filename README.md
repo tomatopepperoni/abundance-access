@@ -46,6 +46,10 @@ The country-detail panel also has **Inspect saved source record**, a collapsed l
 
 [Luxembourg search and focused map example](docs/small-country-map.png).
 
+## Adjust the sidebar
+
+On desktop, drag the grip on the sidebar's right edge to choose its width. Use Left/Right while the grip is focused, Home/End for the limits, and Enter or double-click to restore the default. Width is bounded to 208–360px and further limited on small desktop windows to leave room for the comparison. The preferred width is stored separately from research notes on this browser. Storage failure leaves resizing usable for the current session. Mobile navigation keeps its existing overlay menu.
+
 ## Data and provenance
 
 The included World Bank WDI snapshot contains **217 countries/economies**, **three indicators**, and **2015–2025**: 7,161 country–indicator–year records, including **5,359 reported values** and **1,802 missing records**. Another 79 regional, income-group and world aggregates are kept separate from the country list.
@@ -82,7 +86,7 @@ npx playwright install chromium
 npm run test:e2e              # Desktop/mobile browser flows and accessibility checks
 ```
 
-The verification suite contains 67 unit tests and 70 desktop/mobile browser cases, including filters, direct country replacement, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. Execution results are recorded in the test reports and GitHub Actions runs. These checks verify code, not external statistics or every real device/screen-reader combination.
+The verification suite contains 73 unit tests and 78 desktop/mobile browser cases, including filters, direct country replacement, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. Execution results are recorded in the test reports and GitHub Actions runs. These checks verify code, not external statistics or every real device/screen-reader combination.
 
 ## Query the same data through MCP
 

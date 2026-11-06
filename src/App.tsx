@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import snapshotUrl from '../data/snapshots/latest.json?url';
 import { snapshotSchema } from './lib/schema';
 import { createStore, definitions } from './lib/query';
@@ -34,6 +34,7 @@ import type { SharedComparison } from './lib/sharing';
 import type { ComparisonSummary } from './lib/analysis';
 import { comparisonSummary } from './lib/analysis';
 import { sharingCopy as s } from './content/sharing-en';
+import { SidebarResizer } from './components/SidebarResizer';
 
 type View = keyof typeof c.nav;
 const views = Object.keys(c.nav) as View[];
@@ -103,6 +104,7 @@ function Brand() {
   );
 }
 function Dashboard({ store }: { store: DataStore }) {
+  const layout = useRef<HTMLDivElement>(null);
   const [loaded] = useState(() => {
     const shared = readSharedComparison(window.location.hash, store);
     let saved;
@@ -327,7 +329,7 @@ function Dashboard({ store }: { store: DataStore }) {
           : c.notebookBody;
   const observed = store.snapshot.observations.filter((o) => o.value !== null).length;
   return (
-    <div className="app-shell">
+    <div className="app-shell" ref={layout}>
       <a
         href="#main-content"
         className="skip-link"
@@ -349,6 +351,7 @@ function Dashboard({ store }: { store: DataStore }) {
         />
       )}
       <aside
+        id="research-sidebar"
         className={`sidebar ${navOpen ? 'open' : ''}`}
         aria-label={c.workspace}
         aria-hidden={mobile && !navOpen}
@@ -408,7 +411,8 @@ function Dashboard({ store }: { store: DataStore }) {
           </button>
         </div>
       </aside>
-      <div className="workspace">
+      <SidebarResizer containerRef={layout} />
+      <div className="workspace" id="research-workspace">
         <header className="topbar">
           <button
             id="menu-toggle"
