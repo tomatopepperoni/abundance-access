@@ -219,14 +219,18 @@ function Dashboard({ store }: { store: DataStore }) {
     setResearch((previous) => replaceComparisonCountry(previous, oldCode, newCode, store.snapshot));
     setNotice('');
   };
-  const navigate = (next: View) => {
+  const navigate = (next: View, focusCountrySearch = false) => {
     setView(next);
     window.location.hash = next;
     setNavOpen(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
-    requestAnimationFrame(() =>
-      document.getElementById('main-content')?.focus({ preventScroll: true }),
-    );
+    requestAnimationFrame(() => {
+      const search = focusCountrySearch
+        ? document.querySelector<HTMLInputElement>('.map-country-finder input[type="search"]')
+        : null;
+      (search ?? document.getElementById('main-content'))?.focus({ preventScroll: true });
+      search?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    });
   };
   const openExample = () => {
     setResearch((previous) => ({
@@ -571,7 +575,7 @@ function Dashboard({ store }: { store: DataStore }) {
               research={research}
               onSelection={select}
               onToggle={toggle}
-              onNavigate={navigate}
+              onNavigate={(next) => navigate(next, next === 'explore')}
               onExport={onExport}
               onInvestigate={investigate}
               onRecordSummary={recordSummary}

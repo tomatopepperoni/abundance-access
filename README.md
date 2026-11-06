@@ -36,7 +36,7 @@ For example, a researcher can record Kenya's reported 2022 internet-use value, c
 
 Use **Find any country** above the map to search names, ISO2 or ISO3 codes. The full-size **Add to comparison** action works for all 217 registry countries/economies. **Show on map** centres and enlarges an existing boundary and moves keyboard focus to it; it does not select the country. **Inspect country** opens the country details when no boundary exists at this map scale.
 
-To swap a country, choose **Replace a country** for an unselected country in the map search results, search table or country details, then choose the existing country to replace. The change happens in one step, including when three countries are already selected. It replaces the chosen slot while preserving the other countries' order, the comparison count, observation year and indicator. **Cancel replacement** or Escape closes the chooser without changing the selection. Recorded notes, drafts and investigation plans retain their original country/year/snapshot contexts; they are not relabelled after a swap.
+To swap a country, choose **Replace a country** for an unselected country in the map search results, search table or country details, then choose the existing country to replace. The change happens in one step, including when three countries are already selected. It replaces the chosen slot while preserving the other countries' order, the comparison count, observation year and indicator. **Cancel replacement** or Escape closes the chooser without changing the selection. Recorded notes, drafts and investigation plans retain their original country/year/snapshot contexts; they are not relabelled after a swap. After a successful swap, **View comparison** appears beside the confirmation and receives focus; the country details follow the newly selected country. **Change countries** from the comparison goes directly to the country search. On screens up to 650px wide, each indicator lists all selected country names and values vertically, so a third country is not hidden to the right.
 
 The Natural Earth file has 176 features, of which 170 match selectable registry entries. Another 47 registry countries/economies, including Singapore, have no boundary in this file; their values and search/table selection remain available. Zoom cannot recreate absent geometry, and even 8× zoom does not make every small polygon a suitable touch target. No artificial locations or expanded country boundaries are added.
 
@@ -82,7 +82,7 @@ npx playwright install chromium
 npm run test:e2e              # Desktop/mobile browser flows and accessibility checks
 ```
 
-The verification suite contains 67 unit tests and 66 desktop/mobile browser cases, including filters, direct country replacement, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. Execution results are recorded in the test reports and GitHub Actions runs. These checks verify code, not external statistics or every real device/screen-reader combination.
+The verification suite contains 67 unit tests and 70 desktop/mobile browser cases, including filters, direct country replacement, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. Execution results are recorded in the test reports and GitHub Actions runs. These checks verify code, not external statistics or every real device/screen-reader combination.
 
 ## Query the same data through MCP
 

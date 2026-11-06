@@ -42,7 +42,6 @@ export function Explorer({
   const { selection, search, region } = research;
   const [inspected, setInspected] = useState(selection.countryCodes.at(-1) ?? 'KEN');
   const detailTitle = useRef<HTMLHeadingElement>(null);
-  const detailAction = useRef<HTMLButtonElement>(null);
   const [replacement, setReplacement] = useState<{
     surface: 'table' | 'detail';
     code: string;
@@ -111,6 +110,8 @@ export function Explorer({
             onFocus={focusOnMap}
             onToggle={onToggle}
             onReplace={onReplace}
+            onCompare={() => onNavigate('compare')}
+            onReplaced={setInspected}
           />
           <WorldMap
             store={store}
@@ -149,7 +150,6 @@ export function Explorer({
           {!isMapped && <p className="callout small">{c.mapUnavailable}</p>}
           {(selection.countryCodes.includes(country.code) || selection.countryCodes.length < 3) && (
             <button
-              ref={detailAction}
               className={`button ${selection.countryCodes.includes(country.code) ? 'outline' : 'dark'} full`}
               disabled={
                 !selection.countryCodes.includes(country.code) &&
@@ -173,9 +173,8 @@ export function Explorer({
             onOpenChange={(open) =>
               setReplacement(open ? { surface: 'detail', code: country.code } : null)
             }
-            onReplaced={() =>
-              requestAnimationFrame(() => detailAction.current?.focus({ preventScroll: true }))
-            }
+            onCompare={() => onNavigate('compare')}
+            onReplaced={() => setInspected(country.code)}
             primary={
               !selection.countryCodes.includes(country.code) && selection.countryCodes.length === 3
             }
@@ -339,15 +338,8 @@ export function Explorer({
                           onOpenChange={(open) =>
                             setReplacement(open ? { surface: 'table', code: country.code } : null)
                           }
-                          onReplaced={() =>
-                            requestAnimationFrame(() =>
-                              document
-                                .querySelector<HTMLButtonElement>(
-                                  `[data-testid="country-row-${country.code}"] .select-country`,
-                                )
-                                ?.focus({ preventScroll: true }),
-                            )
-                          }
+                          onCompare={() => onNavigate('compare')}
+                          onReplaced={() => setInspected(country.code)}
                           primary={!selected && selection.countryCodes.length === 3}
                         />
                       </div>

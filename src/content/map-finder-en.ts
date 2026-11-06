@@ -28,6 +28,7 @@ export const mapFinderCopy = {
   replaceChoiceLabel: (oldCountry: string, newCountry: string) =>
     `Replace ${oldCountry} with ${newCountry}`,
   cancelReplacement: 'Cancel replacement',
+  viewComparison: 'View comparison',
   replaced: (oldCountry: string, newCountry: string) =>
     `Replaced ${oldCountry} with ${newCountry}.`,
   selected: 'Selected for comparison',

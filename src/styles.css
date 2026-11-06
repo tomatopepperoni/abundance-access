@@ -57,6 +57,27 @@
   color: var(--teal-dark);
   overflow-wrap: anywhere;
 }
+.map-replace-success {
+  margin-top: 8px;
+}
+.map-replace-success .map-replace-status {
+  margin: 0;
+}
+.map-replace-view {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  white-space: normal;
+}
+.map-replace-view:focus-visible,
+.map-replace-status:focus-visible {
+  outline: 3px solid #1058a5;
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.map-finder-actions > .map-replace-control.has-success {
+  flex: 1 0 100%;
+}
 .country-row-actions {
   display: flex;
   flex-wrap: wrap;
@@ -3530,5 +3551,66 @@ thead th {
   * {
     scroll-behavior: auto !important;
     transition: none !important;
+  }
+}
+
+.mobile-comparison-matrix {
+  display: none;
+}
+@media (max-width: 650px) {
+  .comparison-matrix-table {
+    display: none;
+  }
+  .mobile-comparison-matrix {
+    display: grid;
+    gap: 12px;
+    padding: 0 16px 16px;
+  }
+  .mobile-measure-card {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+  }
+  .mobile-measure-card h3 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  .mobile-measure-unit {
+    margin: 6px 0 12px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .mobile-measure-card dl {
+    margin: 0;
+  }
+  .mobile-measure-card dl > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .mobile-measure-card dl > div:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .mobile-measure-card dt {
+    min-width: 0;
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .mobile-measure-card dd {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 650;
+    line-height: 1.5;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 }

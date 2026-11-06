@@ -36,6 +36,7 @@ export function Comparison({
   onInvestigate: (topic: InvestigationTopic) => void;
 }) {
   const { selection } = research;
+  const matrixId = useId();
   const chartPanel = useRef<HTMLElement>(null);
   const countries = selection.countryCodes.map((code) => store.countryByCode.get(code)!);
   const def = indicator(selection.indicatorCode),
@@ -72,7 +73,12 @@ export function Comparison({
                 <p>{c.allMeasuresBody}</p>
               </div>
             </div>
-            <div className="table-scroll" tabIndex={0} role="region" aria-label={c.allMeasures}>
+            <div
+              className="table-scroll comparison-matrix-table"
+              tabIndex={0}
+              role="region"
+              aria-label={c.allMeasures}
+            >
               <table>
                 <thead>
                   <tr>
@@ -107,6 +113,31 @@ export function Comparison({
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="mobile-comparison-matrix">
+              {definitions.indicators.map((d) => (
+                <section
+                  className="mobile-measure-card"
+                  key={d.code}
+                  aria-labelledby={`${matrixId}-${d.code}`}
+                >
+                  <h3 id={`${matrixId}-${d.code}`}>{d.shortName}</h3>
+                  <p className="mobile-measure-unit">{d.unit}</p>
+                  <dl>
+                    {countries.map((country) => {
+                      const o = observation(store, country.code, d.code, selection.year);
+                      return (
+                        <div key={country.code}>
+                          <dt>{country.name}</dt>
+                          <dd data-testid={`mobile-matrix-${country.code}-${d.code}`}>
+                            {formatValue(o.value)}
+                          </dd>
+                        </div>
+                      );
+                    })}
+                  </dl>
+                </section>
+              ))}
             </div>
             <CommonYearControl
               store={store}

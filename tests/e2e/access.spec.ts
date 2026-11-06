@@ -139,7 +139,11 @@ test('comparison starts with data and country changes, and chart selection updat
   const matrix = page.locator('.measures-panel');
   const matrixTop = await matrix.evaluate((element) => element.getBoundingClientRect().top);
   expect(matrixTop).toBeLessThan(testInfo.project.name === 'mobile' ? 450 : 400);
-  await expect(page.getByTestId('matrix-KOR-IT.NET.USER.ZS')).toBeInViewport();
+  const visibleValue = page.getByTestId(
+    `${testInfo.project.name === 'mobile' ? 'mobile-' : ''}matrix-KOR-IT.NET.USER.ZS`,
+  );
+  await expect(visibleValue).toHaveText('97.2%');
+  await expect(visibleValue).toBeInViewport();
   const chartSelect = page.getByRole('combobox', { name: 'Chart indicator', exact: true });
   await chartSelect.scrollIntoViewIfNeeded();
   await chartSelect.selectOption('EG.ELC.ACCS.ZS');
@@ -199,7 +203,11 @@ test('real-data country selection → same-year comparison → notebook → expo
     .screenshot({ path: `reports/screenshots/${testInfo.project.name}-access-explorer.png` });
   await page.getByRole('button', { name: 'Compare selected countries', exact: true }).click();
   await expect(page).toHaveURL(/\/abundance-access\/#compare$/);
-  await expect(page.getByTestId('matrix-KOR-IT.NET.USER.ZS')).toBeInViewport();
+  const visibleValue = page.getByTestId(
+    `${testInfo.project.name === 'mobile' ? 'mobile-' : ''}matrix-KOR-IT.NET.USER.ZS`,
+  );
+  await expect(visibleValue).toHaveText('97.2%');
+  await expect(visibleValue).toBeInViewport();
   await expect(page.getByTestId('compare-value-KEN')).toHaveText('29.4%');
   await expect(page.getByTestId('compare-value-KOR')).toHaveText('97.2%');
   await page.getByRole('combobox', { name: 'Observation year', exact: true }).selectOption('2021');

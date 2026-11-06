@@ -15,6 +15,7 @@ export function CountryReplacement({
   selection,
   newCountryCode,
   onReplace,
+  onCompare,
   open,
   onOpenChange,
   onReplaced,
@@ -24,6 +25,7 @@ export function CountryReplacement({
   selection: Selection;
   newCountryCode: string;
   onReplace: (oldCountryCode: string, newCountryCode: string) => void;
+  onCompare: () => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onReplaced?: () => void;
@@ -34,6 +36,8 @@ export function CountryReplacement({
   const trigger = useRef<HTMLButtonElement>(null);
   const firstChoice = useRef<HTMLButtonElement>(null);
   const cancelButton = useRef<HTMLButtonElement>(null);
+  const comparisonButton = useRef<HTMLButtonElement>(null);
+  const successStatus = useRef<HTMLParagraphElement>(null);
   const [lastReplacement, setLastReplacement] = useState<Replacement | null>(null);
   const announced = useRef<Replacement | null>(null);
   const country = store.countryByCode.get(newCountryCode);
@@ -71,6 +75,13 @@ export function CountryReplacement({
     if (confirmed && lastReplacement && announced.current !== lastReplacement) {
       announced.current = lastReplacement;
       onReplaced?.();
+      requestAnimationFrame(() => {
+        const next = comparisonButton.current ?? successStatus.current;
+        next?.focus({ preventScroll: true });
+        const bounds = next?.getBoundingClientRect();
+        if (bounds && (bounds.top < 0 || bounds.bottom > window.innerHeight))
+          next?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+      });
     }
   }, [confirmed, lastReplacement, onReplaced]);
 
@@ -81,7 +92,7 @@ export function CountryReplacement({
 
   if (!country) return null;
   return (
-    <div className="map-replace-control">
+    <div className={`map-replace-control${confirmed ? ' has-success' : ''}`}>
       {canReplace && (
         <button
           ref={trigger}
@@ -165,9 +176,29 @@ export function CountryReplacement({
         )}
       </dialog>
       {confirmed && lastReplacement && (
-        <p className="map-replace-status small" role="status" aria-live="polite">
-          {m.replaced(lastReplacement.oldName, lastReplacement.newName)}
-        </p>
+        <div className="map-replace-success">
+          <p
+            ref={successStatus}
+            id={`${id}-success`}
+            className="map-replace-status small"
+            role="status"
+            aria-live="polite"
+            tabIndex={-1}
+          >
+            {m.replaced(lastReplacement.oldName, lastReplacement.newName)}
+          </p>
+          {selection.countryCodes.length >= 2 && (
+            <button
+              ref={comparisonButton}
+              type="button"
+              className="button dark map-replace-view"
+              aria-describedby={`${id}-success`}
+              onClick={onCompare}
+            >
+              {m.viewComparison}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

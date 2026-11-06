@@ -14,6 +14,8 @@ export function MapCountryFinder({
   onInspect,
   onToggle,
   onReplace,
+  onCompare,
+  onReplaced,
 }: {
   store: DataStore;
   selection: Selection;
@@ -22,6 +24,8 @@ export function MapCountryFinder({
   onInspect: (countryCode: string) => void;
   onToggle: (countryCode: string) => void;
   onReplace: (oldCountryCode: string, newCountryCode: string) => void;
+  onCompare: () => void;
+  onReplaced: (countryCode: string) => void;
 }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -130,9 +134,10 @@ export function MapCountryFinder({
                       selection={selection}
                       newCountryCode={country.code}
                       onReplace={onReplace}
+                      onCompare={onCompare}
                       open={replacing === country.code}
                       onOpenChange={(open) => setReplacing(open ? country.code : null)}
-                      onReplaced={() => input.current?.focus()}
+                      onReplaced={() => onReplaced(country.code)}
                       primary={selection.countryCodes.length >= 3}
                     />
                   </div>
