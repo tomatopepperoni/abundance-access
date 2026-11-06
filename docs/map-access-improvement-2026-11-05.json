@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-05",
+  "purpose": "Executed improvement prompt for selecting small countries",
+  "prompt": [
+    "Improve the existing Abundance Access country explorer so small countries are easy to find, inspect and add to a comparison on desktop, mobile and keyboard. Inspect the existing map and data before editing.",
+    "Preserve Natural Earth boundaries and the actual World Bank snapshot. Distinguish 176 map features, 170 selectable mapped countries/economies and all 217 countries/economies in the registry. A low-resolution map omits 47 registry entries; do not fabricate geographic points or expand boundaries to represent them.",
+    "Add bounded zoom-in, zoom-out, directional pan controls and reset to world view. Support deliberate pointer drag without toggling a country on drag release. Do not hijack ordinary page scrolling. Preserve keyboard country navigation, readable focus and accessible control names.",
+    "Add a country-name/ISO-code search beside the map. Results must show the same indicator, year, missing state and values as the map/table. Give each result large, explicit inspect/focus and add/remove actions. Focusing a mapped country must not silently select it. Unmapped economies must remain inspectable and selectable through search. Honor the three-country comparison limit while still permitting inspection and map focus.",
+    "Make small-country use practical through full-size search actions rather than pretending a highly magnified tiny polygon is a large touch target. Avoid fake hit areas that could select a neighboring country. Handle antimeridian-spanning geometry safely without inventing more detailed geography.",
+    "Connect country details to the already implemented preserved raw response and provenance check. Keep technical source details collapsed, with the current API link separate. Do not alter observed values, collection timestamp, manual metadata review date, notes, export privacy defaults or MCP behavior.",
+    "Apply schema/logic tests where meaningful and desktop/mobile browser tests for mapped Luxembourg, unmapped Singapore, missing values, three-country limits, map/table consistency, pan/zoom reset, drag-vs-click and keyboard use. Run types, data validation, unit tests, actual MCP client checks and production build. Verify GitHub Pages repository-subpath refresh and the actual public deployment. Preserve existing browser notes. Record the prompt, findings and checks; do not send messages or add unrelated features."
+  ],
+  "verification": {
+    "status": "local verification complete",
+    "unitTests": 61,
+    "desktopMobileCases": 58,
+    "localExecution": "55 cases passed in the initial full suite; the corrected test selector and contrast fix were verified in all 10 map regression cases. GitHub CI runs all 58 together.",
+    "typecheck": "passed",
+    "dataIntegrity": "217 countries/economies; 170 selectable mapped countries; 47 not drawn; 7161 records; 5359 numeric values; 14 raw response files",
+    "mcp": "Actual local stdio clients, four tools, invalid-input rejection and shared-snapshot equality passed",
+    "productionBuild": "passed",
+    "dataChanges": "No observed values, boundaries, collection timestamp or manual metadata-review date changed.",
+    "limits": [
+      "Zoom cannot restore absent or more detailed boundaries.",
+      "Tiny polygons may remain smaller than touch targets; the full-size search actions provide the reliable selection route.",
+      "Country statistics and test success do not establish local learning conditions or statistical truth."
+    ]
+  },
+  "reviews": [
+    {
+      "focus": "Geographic coverage and data fidelity",
+      "finding": "Only 170 of 217 registry entries have map geometry. Zoom alone cannot provide adequate touch targets for Luxembourg.",
+      "fix": "Search the full registry with separate actions at least 44 pixels high and wide; show an explicit unmapped state and do not construct geography."
+    },
+    {
+      "focus": "Keyboard and pointer interaction",
+      "findings": [
+        "Show on map needed actual SVG focus after the viewport update.",
+        "Releasing the mouse outside the canvas before the drag threshold could leave a pending drag."
+      ],
+      "fixes": [
+        "Move DOM focus after rendering and preserve the comparison selection.",
+        "Clear pending drag state when the pointer leaves, capture is lost, the action is cancelled or mouse buttons are released."
+      ]
+    },
+    {
+      "focus": "Accessibility and visible feedback",
+      "finding": "The browser audit detected insufficient contrast in the focus label in one desktop state.",
+      "fix": "Use an opaque white label background, dark text and an explicit focused boundary outline.",
+      "verification": "All 10 map desktop/mobile browser cases passed after the fix."
+    }
+  ]
+}

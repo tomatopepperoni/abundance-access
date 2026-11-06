@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { c } from '../content/en';
 import {
   coverage,
@@ -13,6 +13,10 @@ import type { Research, Selection } from '../lib/research';
 import { Controls } from './Controls';
 import { WorldMap, worldMap } from './WorldMap';
 import { Icon } from './Icon';
+import { MapCountryFinder } from './MapCountryFinder';
+import { SourceReference } from './SourceReference';
+import { explorerCopy } from '../content/explorer-en';
+const mappedCodes = new Set(worldMap.features.map((feature) => feature.properties.code));
 export function Explorer({
   store,
   research,
@@ -34,6 +38,20 @@ export function Explorer({
 }) {
   const { selection, search, region } = research;
   const [inspected, setInspected] = useState(selection.countryCodes.at(-1) ?? 'KEN');
+  const detailTitle = useRef<HTMLHeadingElement>(null);
+  const inspectDetails = (code: string) => {
+    setInspected(code);
+    requestAnimationFrame(() => {
+      detailTitle.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+      detailTitle.current?.focus({ preventScroll: true });
+    });
+  };
+  const [mapFocus, setMapFocus] = useState({ code: '', request: 0 });
+  const focusOnMap = (code: string) => {
+    if (!mappedCodes.has(code)) return;
+    setInspected(code);
+    setMapFocus((previous) => ({ code, request: previous.request + 1 }));
+  };
   const country = store.countryByCode.get(inspected) ?? store.snapshot.countries[0];
   const row = observation(store, country.code, selection.indicatorCode, selection.year);
   const def = indicator(selection.indicatorCode),
@@ -43,7 +61,7 @@ export function Explorer({
     [store],
   );
   const countries = findCountries(store.snapshot.countries, search, region);
-  const isMapped = worldMap.features.some((f) => f.properties.code === country.code);
+  const isMapped = mappedCodes.has(country.code);
   return (
     <>
       {showExample && (
@@ -75,11 +93,23 @@ export function Explorer({
               {count.observed} / {count.total}
             </span>
           </div>
+          <MapCountryFinder
+            store={store}
+            selection={selection}
+            mappedCodes={mappedCodes}
+            onInspect={(code) =>
+              mappedCodes.has(code) ? setInspected(code) : inspectDetails(code)
+            }
+            onFocus={focusOnMap}
+            onToggle={onToggle}
+          />
           <WorldMap
             store={store}
             selection={selection}
             onToggle={onToggle}
             onInspect={setInspected}
+            focusedCountry={mapFocus.code}
+            focusRequest={mapFocus.request}
           />
           <div className="map-credit">
             {definitions.map.name} · {definitions.map.license}
@@ -94,7 +124,9 @@ export function Explorer({
           <p className="small muted">{c.countryDetailHelp}</p>
           <div className="country-title">
             <span className="country-code">{country.code}</span>
-            <h2>{country.name}</h2>
+            <h2 ref={detailTitle} tabIndex={-1}>
+              {country.name}
+            </h2>
           </div>
           <p className="muted small">{country.region}</p>
           <div className="detail-value" data-testid="inspected-value">
@@ -137,6 +169,10 @@ export function Explorer({
             {c.sourceLink}
             <Icon name="external" size={13} />
           </a>
+          <details className="detail-raw-source">
+            <summary>{explorerCopy.rawSource}</summary>
+            <SourceReference store={store} observation={row} />
+          </details>
           <div className="detail-context">
             <span className="eyebrow">{c.whyItMatters}</span>
             <p>{def.context}</p>
@@ -233,12 +269,7 @@ export function Explorer({
                     <th scope="row">
                       <button
                         className="country-name-button"
-                        onClick={() => {
-                          setInspected(country.code);
-                          document
-                            .querySelector('.country-detail')
-                            ?.scrollIntoView({ block: 'nearest' });
-                        }}
+                        onClick={() => inspectDetails(country.code)}
                       >
                         {country.name}
                         <span>

@@ -32,6 +32,18 @@ Selections and notes stay in browser storage. Drafts retain the country, year, i
 
 For example, a researcher can record Kenya's reported 2022 internet-use value, choose **Connection costs**, and plan to check a named community's tariffs and device availability before considering course delivery options. This is an illustrative investigation workflow, not collected local evidence or a recommendation to operate in Kenya.
 
+## Find and select small countries
+
+Use **Find any country** above the map to search names, ISO2 or ISO3 codes. The full-size **Add to comparison** action works for all 217 registry countries/economies. **Show on map** centres and enlarges an existing boundary and moves keyboard focus to it; it does not select the country. **Inspect country** opens the country details when no boundary exists at this map scale.
+
+The Natural Earth file has 176 features, of which 170 match selectable registry entries. Another 47 registry countries/economies, including Singapore, have no boundary in this file; their values and search/table selection remain available. Zoom cannot recreate absent geometry, and even 8× zoom does not make every small polygon a suitable touch target. No artificial locations or expanded country boundaries are added.
+
+Use **Zoom in / Zoom out**, the four **Pan map** buttons and **Reset world view**. Mouse dragging pans a zoomed map without changing the comparison. Touchscreens use the pan buttons; normal page scrolling is preserved and the mouse wheel does not zoom. Arrow keys browse mapped countries; Enter/Space changes selection. A country focus label and outline identify the inspected location. The three-country limit restricts adding, not inspection. Viewport/search state is temporary; comparison selection and research notes remain saved.
+
+The country-detail panel also has **Inspect saved source record**, a collapsed link to the frozen raw response, checksum and record index. Table-name inspection moves focus to the detail heading. [Executed prompt and map verification record](docs/map-access-improvement-2026-11-05.json).
+
+[Luxembourg search and focused map example](docs/small-country-map.png).
+
 ## Data and provenance
 
 The included World Bank WDI snapshot contains **217 countries/economies**, **three indicators**, and **2015–2025**: 7,161 country–indicator–year records, including **5,359 reported values** and **1,802 missing records**. Another 79 regional, income-group and world aggregates are kept separate from the country list.
@@ -68,7 +80,7 @@ npx playwright install chromium
 npm run test:e2e              # Desktop/mobile browser flows and accessibility checks
 ```
 
-Local verification covered 51 unit tests and 48 desktop/mobile browser cases, including filters, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. This is code verification, not validation of external statistics or every real device/screen-reader combination.
+Local verification covered 61 unit tests and 58 desktop/mobile browser cases, including filters, missing data, map/table agreement, note context, storage failures, exports, keyboard use and subpath reloads. This is code verification, not validation of external statistics or every real device/screen-reader combination.
 
 ## Query the same data through MCP
 
