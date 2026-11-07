@@ -35,6 +35,7 @@ import type { ComparisonSummary } from './lib/analysis';
 import { comparisonSummary } from './lib/analysis';
 import { sharingCopy as s } from './content/sharing-en';
 import { SidebarResizer } from './components/SidebarResizer';
+import { sidebarCopy } from './content/sidebar-en';
 
 type View = keyof typeof c.nav;
 const views = Object.keys(c.nav) as View[];
@@ -126,6 +127,10 @@ function Dashboard({ store }: { store: DataStore }) {
     [navOpen, setNavOpen] = useState(false),
     [notice, setNotice] = useState(loaded.status === 'invalid' ? c.restored : '');
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 800px)').matches);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const desktopSidebarHidden = !mobile && sidebarCollapsed;
+  const sidebarHidden = mobile ? !navOpen : sidebarCollapsed;
+  const sidebarToggleLabel = sidebarCollapsed ? sidebarCopy.expand : sidebarCopy.collapse;
   useEffect(() => {
     try {
       setStorageAvailable(saveResearch(research, window.localStorage, store));
@@ -135,7 +140,10 @@ function Dashboard({ store }: { store: DataStore }) {
   }, [research, store]);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 800px)');
-    const handler = () => setMobile(query.matches);
+    const handler = () => {
+      setMobile(query.matches);
+      setNavOpen(false);
+    };
     query.addEventListener('change', handler);
     return () => query.removeEventListener('change', handler);
   }, []);
@@ -329,7 +337,7 @@ function Dashboard({ store }: { store: DataStore }) {
           : c.notebookBody;
   const observed = store.snapshot.observations.filter((o) => o.value !== null).length;
   return (
-    <div className="app-shell" ref={layout}>
+    <div className={`app-shell${desktopSidebarHidden ? ' sidebar-collapsed' : ''}`} ref={layout}>
       <a
         href="#main-content"
         className="skip-link"
@@ -354,8 +362,8 @@ function Dashboard({ store }: { store: DataStore }) {
         id="research-sidebar"
         className={`sidebar ${navOpen ? 'open' : ''}`}
         aria-label={c.workspace}
-        aria-hidden={mobile && !navOpen}
-        inert={mobile && !navOpen}
+        aria-hidden={sidebarHidden}
+        inert={sidebarHidden}
       >
         <a
           className="brand"
@@ -416,12 +424,18 @@ function Dashboard({ store }: { store: DataStore }) {
         <header className="topbar">
           <button
             id="menu-toggle"
-            className="icon-button menu-toggle"
-            aria-label={navOpen ? c.closeNav : c.openNav}
-            aria-expanded={navOpen}
-            onClick={() => setNavOpen((open) => !open)}
+            type="button"
+            className={mobile ? 'icon-button menu-toggle' : 'button outline sidebar-toggle'}
+            aria-label={mobile ? (navOpen ? c.closeNav : c.openNav) : sidebarToggleLabel}
+            aria-expanded={!sidebarHidden}
+            aria-controls="research-sidebar"
+            onClick={() => {
+              if (mobile) setNavOpen((open) => !open);
+              else setSidebarCollapsed((collapsed) => !collapsed);
+            }}
           >
-            <Icon name="menu" />
+            <Icon name={mobile ? 'menu' : 'sidebar'} />
+            {!mobile && sidebarToggleLabel}
           </button>
           <div className="breadcrumb">
             <span>{c.breadcrumb}</span>
@@ -433,7 +447,11 @@ function Dashboard({ store }: { store: DataStore }) {
             {storageAvailable ? c.saved : c.session}
           </span>
         </header>
-        <main id="main-content" tabIndex={-1} className="main-content">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`main-content${desktopSidebarHidden && view === 'compare' ? ' wide-comparison' : ''}`}
+        >
           <div className={`notice ${notice ? 'visible' : ''}`} role="status" aria-live="polite">
             {notice}
           </div>

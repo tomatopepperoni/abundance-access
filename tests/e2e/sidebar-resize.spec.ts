@@ -121,6 +121,50 @@ test('keyboard resizing is bounded, adapts to the viewport and restores the requ
   await audit(page);
 });
 
+test('collapsing the desktop sidebar widens the comparison and restores the adjusted width on expand', async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('./#compare');
+  await resizer(page).press('ArrowRight');
+  await aligned(page, 258);
+  const sidebar = page.locator('#research-sidebar');
+  const workspace = page.locator('#research-workspace');
+  const matrix = page.locator('.comparison-matrix-table');
+  const expandedWidth = (await matrix.boundingBox())!.width;
+  const collapse = page.getByRole('button', { name: 'Collapse sidebar', exact: true });
+  const expand = page.getByRole('button', { name: 'Expand sidebar', exact: true });
+  await expect(collapse).toHaveAttribute('aria-expanded', 'true');
+  await expect(collapse).toHaveAttribute('aria-controls', 'research-sidebar');
+  await collapse.click();
+  await expect(expand).toHaveAttribute('aria-expanded', 'false');
+  await expect(expand).toBeFocused();
+  await expect(sidebar).toBeHidden();
+  await expect(resizer(page)).toBeHidden();
+  await expect
+    .poll(async () => {
+      const bounds = await workspace.boundingBox();
+      return { x: bounds!.x, width: bounds!.width };
+    })
+    .toEqual({ x: 0, width: 1440 });
+  await expect.poll(async () => (await matrix.boundingBox())!.width).toBeGreaterThan(expandedWidth);
+  await expect(page.getByTestId('matrix-KOR-IT.NET.USER.ZS')).toHaveText('97.2%');
+
+  await page.setViewportSize({ width: 390, height: 740 });
+  await expect(expand).toBeHidden();
+  await activate(
+    page.getByRole('button', { name: 'Open navigation', exact: true }),
+    info.project.name === 'mobile',
+  );
+  await expect(sidebar).not.toHaveAttribute('inert');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(sidebar).toBeHidden();
+  await expect(expand).toBeVisible();
+  await expand.press('Enter');
+  await expect(collapse).toBeFocused();
+  await aligned(page, 258);
+});
+
 test('a desktop width preference does not obstruct the mobile menu or comparison and returns when the screen widens', async ({
   page,
 }, info) => {

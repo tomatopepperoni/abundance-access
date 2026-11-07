@@ -52,6 +52,12 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
       </>
     ),
     menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+    sidebar: (
+      <>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M9 5v14" />
+      </>
+    ),
     info: (
       <>
         <circle cx="12" cy="12" r="9" />

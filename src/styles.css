@@ -803,6 +803,14 @@ details[open] > summary {
   width: calc(100% - var(--sidebar-width, 248px));
   min-width: 0;
 }
+.sidebar-collapsed > .sidebar,
+.sidebar-collapsed > .sidebar-resizer {
+  display: none;
+}
+.sidebar-collapsed > .workspace {
+  margin-left: 0;
+  width: 100%;
+}
 .topbar {
   height: 69px;
   border-bottom: 1px solid var(--line);
@@ -823,6 +831,9 @@ details[open] > summary {
 .breadcrumb strong {
   font-weight: 550;
   color: var(--ink);
+}
+.sidebar-toggle + .breadcrumb {
+  flex: 1;
 }
 .storage-status {
   display: flex;
@@ -848,6 +859,9 @@ details[open] > summary {
   margin: 0 auto;
   outline: none;
   min-height: calc(100vh - 69px);
+}
+.wide-comparison {
+  max-width: none;
 }
 .notice {
   min-height: 0;
