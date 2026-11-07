@@ -38,6 +38,7 @@ import { SidebarResizer } from './components/SidebarResizer';
 import { sidebarCopy } from './content/sidebar-en';
 
 type View = keyof typeof c.nav;
+const SIDEBAR_COLLAPSED_KEY = 'abundance-access:sidebar-collapsed:v1';
 const views = Object.keys(c.nav) as View[];
 const readView = (): View =>
   views.includes(window.location.hash.slice(1).split('?')[0] as View)
@@ -127,7 +128,13 @@ function Dashboard({ store }: { store: DataStore }) {
     [navOpen, setNavOpen] = useState(false),
     [notice, setNotice] = useState(loaded.status === 'invalid' ? c.restored : '');
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 800px)').matches);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const desktopSidebarHidden = !mobile && sidebarCollapsed;
   const sidebarHidden = mobile ? !navOpen : sidebarCollapsed;
   const sidebarToggleLabel = sidebarCollapsed ? sidebarCopy.expand : sidebarCopy.collapse;
@@ -430,8 +437,17 @@ function Dashboard({ store }: { store: DataStore }) {
             aria-expanded={!sidebarHidden}
             aria-controls="research-sidebar"
             onClick={() => {
-              if (mobile) setNavOpen((open) => !open);
-              else setSidebarCollapsed((collapsed) => !collapsed);
+              if (mobile) {
+                setNavOpen((open) => !open);
+                return;
+              }
+              const collapsed = !sidebarCollapsed;
+              setSidebarCollapsed(collapsed);
+              try {
+                window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+              } catch {
+                // The toggle still works for the current page when storage is blocked.
+              }
             }}
           >
             <Icon name={mobile ? 'menu' : 'sidebar'} />

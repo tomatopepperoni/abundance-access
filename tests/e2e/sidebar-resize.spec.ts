@@ -2,6 +2,7 @@ import { test, expect, type Page, type Locator } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const widthKey = 'abundance-access:sidebar-width:v1';
+const collapsedKey = 'abundance-access:sidebar-collapsed:v1';
 const researchKey = 'abundance-access:research:v1';
 
 function resizer(page: Page) {
@@ -121,7 +122,7 @@ test('keyboard resizing is bounded, adapts to the viewport and restores the requ
   await audit(page);
 });
 
-test('collapsing the desktop sidebar widens the comparison and restores the adjusted width on expand', async ({
+test('desktop sidebar visibility survives reload and expanding restores the adjusted width', async ({
   page,
 }, info) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -160,8 +161,16 @@ test('collapsing the desktop sidebar widens the comparison and restores the adju
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(sidebar).toBeHidden();
   await expect(expand).toBeVisible();
+  await page.reload();
+  await expect(expand).toHaveAttribute('aria-expanded', 'false');
+  await expect(sidebar).toBeHidden();
+  await expect(resizer(page)).toBeHidden();
+  await expect.poll(async () => (await matrix.boundingBox())!.width).toBeGreaterThan(expandedWidth);
   await expand.press('Enter');
   await expect(collapse).toBeFocused();
+  await aligned(page, 258);
+  await page.reload();
+  await expect(collapse).toHaveAttribute('aria-expanded', 'true');
   await aligned(page, 258);
 });
 
@@ -200,18 +209,22 @@ test('a desktop width preference does not obstruct the mobile menu or comparison
   await aligned(page, 360);
 });
 
-test('an invalid preference and blocked preference writes leave resizing usable and research storage intact', async ({
+test('invalid preferences and blocked writes leave sidebar controls usable and research storage intact', async ({
   page,
 }) => {
-  await page.addInitScript((key) => {
-    localStorage.setItem(key, 'NaN');
-    const originalSetItem = Storage.prototype.setItem;
-    Storage.prototype.setItem = function (name: string, value: string) {
-      if (name === key)
-        throw new DOMException('Preference storage blocked for test', 'QuotaExceededError');
-      originalSetItem.call(this, name, value);
-    };
-  }, widthKey);
+  await page.addInitScript(
+    ({ widthKey, collapsedKey }) => {
+      localStorage.setItem(widthKey, 'NaN');
+      localStorage.setItem(collapsedKey, 'invalid');
+      const originalSetItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (name: string, value: string) {
+        if (name === widthKey || name === collapsedKey)
+          throw new DOMException('Preference storage blocked for test', 'QuotaExceededError');
+        originalSetItem.call(this, name, value);
+      };
+    },
+    { widthKey, collapsedKey },
+  );
   await page.setViewportSize({ width: 1440, height: 1000 });
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -224,6 +237,9 @@ test('an invalid preference and blocked preference writes leave resizing usable 
   await resizer(page).focus();
   await resizer(page).press('ArrowRight');
   await aligned(page, 258);
+  await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Expand sidebar', exact: true })).toBeVisible();
+  await expect(page.locator('#research-sidebar')).toBeHidden();
   expect(await research(page)).toEqual(original);
   await expect(page.locator('.storage-status')).toContainText('Saved on this device');
   await page.reload();
