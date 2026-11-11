@@ -14,12 +14,13 @@ export function clampMapView(view: MapView): MapView {
     zoom,
   };
 }
-export function zoomMapView(view: MapView, zoom: number): MapView {
+export function zoomMapView(view: MapView, zoom: number, anchor = { x: 0.5, y: 0.5 }): MapView {
   const current = clampMapView(view),
     nextZoom = clamp(finite(zoom, current.zoom), 1, MAX_MAP_ZOOM);
+  const changeInScale = 1 / current.zoom - 1 / nextZoom;
   return clampMapView({
-    x: current.x + MAP_WIDTH / current.zoom / 2 - MAP_WIDTH / nextZoom / 2,
-    y: current.y + MAP_HEIGHT / current.zoom / 2 - MAP_HEIGHT / nextZoom / 2,
+    x: current.x + MAP_WIDTH * changeInScale * clamp(finite(anchor.x, 0.5), 0, 1),
+    y: current.y + MAP_HEIGHT * changeInScale * clamp(finite(anchor.y, 0.5), 0, 1),
     zoom: nextZoom,
   });
 }

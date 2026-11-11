@@ -75,6 +75,7 @@ export function WorldMap({
   const [hovered, setHovered] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<string | null>(null);
   const [view, setView] = useState<MapView>(worldView);
+  const currentView = useRef(view);
   const current =
     hovered && store.countryByCode.has(hovered)
       ? observation(store, hovered, selection.indicatorCode, selection.year)
@@ -90,12 +91,53 @@ export function WorldMap({
     setMapFocus(feature.code);
   }, [focusRequest, focusedCountry, store]);
   useLayoutEffect(() => {
+    currentView.current = view;
     const code = pendingFocus.current;
     if (!code) return;
     pendingFocus.current = null;
     canvas.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
     buttons.current.get(code)?.focus({ preventScroll: true });
   }, [view, focused]);
+  useEffect(() => {
+    const element = canvas.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      const { deltaMode, deltaY } = event;
+      if (
+        !event.cancelable ||
+        !deltaY ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        drag.current?.dragging
+      )
+        return;
+      const previous = currentView.current;
+      if ((deltaY > 0 && previous.zoom <= 1) || (deltaY < 0 && previous.zoom >= MAX_MAP_ZOOM))
+        return;
+      const matrix = element.getScreenCTM();
+      if (!matrix) return;
+      const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+      const box = element.viewBox.baseVal;
+      const unit =
+        deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? 16
+          : deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? element.clientHeight
+            : 1;
+      const zoom = Math.min(MAX_MAP_ZOOM, previous.zoom * 2 ** ((-deltaY * unit) / 300));
+      const next = zoomMapView(previous, zoom, {
+        x: (point.x - box.x) / box.width,
+        y: (point.y - box.y) / box.height,
+      });
+      if (next.zoom === previous.zoom) return;
+      event.preventDefault();
+      currentView.current = next;
+      setView(next);
+    };
+    element.addEventListener('wheel', onWheel, { passive: false });
+    return () => element.removeEventListener('wheel', onWheel);
+  }, []);
   const move = (code: string, delta: number, edge?: 'first' | 'last') => {
     const index = mapped.findIndex((f) => f.code === code),
       next =

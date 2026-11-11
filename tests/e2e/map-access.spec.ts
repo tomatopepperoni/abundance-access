@@ -178,6 +178,62 @@ test('zoom, pan and keyboard navigation preserve missing values, country selecti
   await audit(page);
 });
 
+test('mouse wheel zooms around the map pointer and scrolls the page outside the map or at a zoom limit', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Physical mouse wheel interaction');
+  await page.goto('./#explore');
+  const map = page.locator('.world-map > svg');
+  const chips = page.locator('.country-chips .country-chip');
+  await expect(chips).toHaveCount(2);
+  const selection = await chips.allTextContents();
+  const scrollY = () => page.evaluate(() => window.scrollY);
+  const hoverMap = async () => {
+    await map.scrollIntoViewIfNeeded();
+    const box = (await map.boundingBox())!;
+    const pointer = {
+      x: Math.round(box.x + box.width * 0.67),
+      y: Math.round(box.y + box.height * 0.37),
+    };
+    await page.mouse.move(pointer.x, pointer.y);
+    return pointer;
+  };
+
+  const pointer = await hoverMap();
+  const mapPoint = () =>
+    map.evaluate((canvas: SVGSVGElement, { x, y }) => {
+      const point = new DOMPoint(x, y).matrixTransform(canvas.getScreenCTM()!.inverse());
+      return { x: point.x, y: point.y };
+    }, pointer);
+  const original = await mapPoint();
+  const beforeZoom = await scrollY();
+  await page.mouse.wheel(0, -300);
+  await expect(map).toHaveAttribute('data-zoom', '2');
+  expect(await scrollY()).toBe(beforeZoom);
+  const anchored = await mapPoint();
+  expect(anchored.x).toBeCloseTo(original.x, 1);
+  expect(anchored.y).toBeCloseTo(original.y, 1);
+  await page.mouse.wheel(0, 300);
+  await expect(map).toHaveAttribute('data-zoom', '1');
+  expect(await scrollY()).toBe(beforeZoom);
+
+  await page.locator('.map-navigation').hover();
+  const beforeOutside = await scrollY();
+  await page.mouse.wheel(0, -180);
+  await expect.poll(scrollY).toBeLessThan(beforeOutside);
+  await expect(map).toHaveAttribute('data-zoom', '1');
+
+  await hoverMap();
+  await page.mouse.wheel(0, -1200);
+  await expect(map).toHaveAttribute('data-zoom', '8');
+  await expect(page.getByRole('button', { name: 'Zoom in', exact: true })).toBeDisabled();
+  const beforeLimit = await scrollY();
+  await page.mouse.wheel(0, -180);
+  await expect.poll(scrollY).toBeLessThan(beforeLimit);
+  await expect(map).toHaveAttribute('data-zoom', '8');
+  expect(await chips.allTextContents()).toEqual(selection);
+});
+
 test('dragging a zoomed map never changes comparison selection and a table inspection focuses its heading', async ({
   page,
 }) => {

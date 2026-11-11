@@ -11,5 +11,5 @@ export const mapCopy = {
   zoom: 'Map zoom',
   focus: 'Map focus',
   focusHelp: 'Focus shows a country; it does not add it to the comparison.',
-  help: 'Zoom with the buttons, then use the pan arrows or drag with a mouse. On touchscreens, use the pan buttons; normal page scrolling stays available. Arrow keys move between countries; Enter or Space selects. Tiny or undrawn countries can be selected with the country finder above.',
+  help: 'Zoom with the mouse wheel over the map or use the zoom buttons. Pan with the arrows or drag with a mouse. On touchscreens, use the map buttons. Arrow keys move between countries. Press Enter or Space to select, or use the country finder above.',
 } as const;
