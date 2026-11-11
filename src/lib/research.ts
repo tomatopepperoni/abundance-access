@@ -3,9 +3,13 @@ import { indicatorCodeSchema, yearSchema, type Snapshot } from './schema';
 import { defaultYear, type DataStore } from './query';
 import { comparisonSummarySchema, type ComparisonSummary } from './analysis';
 import {
+  investigationFindingsDraftSchema,
+  investigationFindingsSchema,
   investigationSchema,
   investigationTopicSchema,
   emptyInvestigation,
+  type InvestigationFindings,
+  type InvestigationFindingsDraft,
   type InvestigationTopic,
 } from './investigation';
 
@@ -16,16 +20,25 @@ const selectionSchema = z.object({
   indicatorCode: indicatorCodeSchema,
   year: yearSchema,
 });
-const noteSchema = z.object({
-  id: z.string(),
-  createdAt: z.iso.datetime(),
-  datasetRunId: z.string(),
-  selection: selectionSchema,
-  facts: z.string().max(6000),
-  questions: z.string().max(6000),
-  evidence: comparisonSummarySchema.optional(),
-  investigation: investigationSchema.optional(),
-});
+const noteSchema = z
+  .object({
+    id: z.string(),
+    createdAt: z.iso.datetime(),
+    datasetRunId: z.string(),
+    selection: selectionSchema,
+    facts: z.string().max(6000),
+    questions: z.string().max(6000),
+    evidence: comparisonSummarySchema.optional(),
+    investigation: investigationSchema.optional(),
+    findings: investigationFindingsSchema.optional(),
+    findingsDraft: investigationFindingsDraftSchema.optional(),
+  })
+  .refine((note) => !note.findings || Boolean(note.investigation), {
+    path: ['findings'],
+  })
+  .refine((note) => !note.findingsDraft || Boolean(note.investigation), {
+    path: ['findingsDraft'],
+  });
 const draftContextSchema = z.object({
   selection: selectionSchema,
   datasetRunId: z.string().min(1).max(200),
@@ -195,6 +208,41 @@ export function startInvestigation(
     },
   };
 }
+export function recordInvestigationFindings(
+  research: Research,
+  noteId: string,
+  findings: InvestigationFindings,
+): Research {
+  if (!research.notes.some((note) => note.id === noteId && note.investigation)) return research;
+  const valid = investigationFindingsSchema.parse(findings);
+  return {
+    ...research,
+    notes: research.notes.map((note) => {
+      if (note.id !== noteId) return note;
+      const { findingsDraft: _draft, ...saved } = note;
+      return { ...saved, findings: valid };
+    }),
+  };
+}
+
+export function editInvestigationFindingsDraft(
+  research: Research,
+  noteId: string,
+  value: InvestigationFindingsDraft | undefined,
+): Research {
+  const existing = research.notes.find((note) => note.id === noteId && note.investigation);
+  if (!existing) return research;
+  const { findingsDraft, ...note } = existing;
+  if (!value && !findingsDraft) return research;
+  const draft = value && investigationFindingsDraftSchema.safeParse(value);
+  if (draft && !draft.success) return research;
+  const updated = draft ? { ...note, findingsDraft: draft.data } : note;
+  return {
+    ...research,
+    notes: research.notes.map((entry) => (entry === existing ? updated : entry)),
+  };
+}
+
 export function defaultResearch(store: DataStore): Research {
   return {
     schemaVersion: 2,
@@ -275,11 +323,11 @@ export function validateResearch(value: unknown, snapshot: Snapshot): Research {
 export function loadResearch(store: DataStore, storage: Pick<Storage, 'getItem'>) {
   try {
     const text = storage.getItem(STORAGE_KEY);
-    if (!text) return { data: defaultResearch(store), status: 'ok' as const };
+    if (text === null) return { data: defaultResearch(store), status: 'ok' as const };
     try {
       return { data: validateResearch(JSON.parse(text), store.snapshot), status: 'ok' as const };
     } catch {
-      return { data: defaultResearch(store), status: 'invalid' as const };
+      return { data: defaultResearch(store), status: 'invalid' as const, raw: text };
     }
   } catch {
     return { data: defaultResearch(store), status: 'unavailable' as const };

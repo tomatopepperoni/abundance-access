@@ -148,6 +148,7 @@ export function SavedInvestigation({ value }: { value: Investigation }) {
       <h4>
         {p.planTitle} · {p.topics[value.topic]}
       </h4>
+      <p className="investigation-question">{p.questions[value.topic]}</p>
       <dl className="source-facts">
         {(
           [
@@ -164,7 +165,7 @@ export function SavedInvestigation({ value }: { value: Investigation }) {
           </div>
         ))}
         <div>
-          <dt>{p.status}</dt>
+          <dt>{p.savedStatus}</dt>
           <dd>{p.statuses[value.status]}</dd>
         </div>
       </dl>

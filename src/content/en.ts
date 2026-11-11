@@ -18,9 +18,22 @@ export const c = {
   breadcrumb: 'Education & digital access',
   saved: 'Saved on this device',
   session: 'Session only — storage unavailable',
-  restored: 'Saved data could not be restored. Default selections are shown.',
+  workspacePreserved:
+    'Your saved workspace could not be read. The original data is preserved in this browser. Changes are kept for this session.',
+  workspaceReadBlocked:
+    'Browser storage blocked access to your saved workspace. Changes are kept for this session.',
+  downloadPreserved: 'Download preserved workspace',
   reset: 'Reset research workspace',
-  resetDone: 'Workspace reset. Earlier Abundance Pathways storage is preserved.',
+  resetTitle: 'Reset research workspace?',
+  resetHelp: 'This clears your selections, drafts, notes and findings from this browser.',
+  resetUnreadable: 'This deletes the preserved workspace data and clears this session.',
+  resetSessionHelp:
+    'This clears the workspace for this session. Any data already stored in this browser is preserved.',
+  resetCancel: 'Cancel',
+  resetConfirm: 'Reset workspace',
+  resetDone: 'Workspace reset.',
+  resetSessionDone: 'Session workspace reset. Saved browser data was preserved.',
+  resetFailed: 'Browser storage prevented the reset. Your current workspace is still open.',
   skip: 'Skip to main content',
   openNav: 'Open navigation',
   closeNav: 'Close navigation',
@@ -226,6 +239,9 @@ export const c = {
   factLabel: 'User-authored observations',
   questionLabel: 'Questions, not established conclusions',
   restoreNote: 'Restore note selection',
+  exportNote: 'Export this note',
+  exportNoteCsv: 'Export note CSV',
+  exportNoteMarkdown: 'Export note Markdown',
   footer:
     'Independent project inspired by a supply-chain class taught by Yorke Rhodes. He did not create or endorse this tool.',
   footerLimit:

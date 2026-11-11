@@ -1,11 +1,13 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile, mkdir } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
+import type { Research } from '../../src/lib/research';
+import type { Snapshot } from '../../src/lib/schema';
 
 const snapshot = JSON.parse(
   readFileSync(new URL('../../data/snapshots/latest.json', import.meta.url), 'utf8'),
-);
+) as Snapshot;
 const key = 'abundance-access:research:v1';
 
 async function nav(page: Page, name: string) {
@@ -117,9 +119,168 @@ test('a comparison becomes a contextual investigation plan, survives reload and 
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   if (await menu.isVisible()) await menu.click();
   await page.getByRole('button', { name: 'Reset research workspace', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: 'Reset research workspace?', exact: true })
+    .getByRole('button', { name: 'Reset workspace', exact: true })
+    .click();
   await nav(page, 'Research notebook');
   await expect(page.locator('.saved-note')).toHaveCount(0);
   await expect(page.getByTestId('investigation-plan')).toHaveCount(0);
+});
+
+test('findings stay with the saved investigation and are exported only with its note', async ({
+  page,
+}, testInfo) => {
+  const activate = async (action: Locator) => {
+    if (testInfo.project.use.hasTouch) await action.tap();
+    else {
+      await action.focus();
+      await page.keyboard.press('Enter');
+    }
+  };
+  const stored = (): Promise<Research> =>
+    page.evaluate((storageKey) => JSON.parse(localStorage.getItem(storageKey)!), key);
+  const year = page.getByRole('combobox', { name: 'Observation year', exact: true });
+  const locality = 'TEST ONLY Kenyan study site';
+  const plannedEvidence = 'TEST ONLY Check mobile data costs for the proposed course';
+  const notFound = 'TEST ONLY No relevant tariff record located';
+  const findings = {
+    status: 'found',
+    sourceTitle: 'TEST ONLY Sample provider tariff sheet',
+    sourceUrl: 'https://example.invalid/test-only-tariffs',
+    checkedOn: '2026-11-06',
+    referencePeriod: 'TEST ONLY October 2026',
+    locality,
+    targetGroup: 'TEST ONLY Adult learners at the study site',
+    summary: 'TEST ONLY Sample tariffs were listed per prepaid plan',
+    uncertainty: 'TEST ONLY Learner costs still need to be checked',
+  };
+
+  await example(page);
+  await expect(year).toHaveValue('2022');
+  await activate(
+    page
+      .getByRole('region', { name: 'Choose what to investigate next', exact: true })
+      .getByRole('button', { name: 'Connection costs', exact: true }),
+  );
+  const plan = page.getByTestId('investigation-plan');
+  await plan.getByRole('textbox', { name: 'Target locality', exact: true }).fill(locality);
+  await plan
+    .getByRole('textbox', { name: 'Evidence to collect', exact: true })
+    .fill(plannedEvidence);
+  await activate(page.getByRole('button', { name: 'Add note with recorded context', exact: true }));
+  const saved = page.locator('.saved-note');
+  await expect(saved).toHaveCount(1);
+  await expect.poll(async () => (await stored()).notes.length).toBe(1);
+  const original = (await stored()).notes[0];
+  expect(original.selection).toEqual({
+    countryCodes: ['KOR', 'IND', 'KEN'],
+    indicatorCode: 'IT.NET.USER.ZS',
+    year: 2022,
+  });
+  expect(original.datasetRunId).toBe(snapshot.runId);
+  const originalRows = original.selection.countryCodes.map((code) =>
+    snapshot.observations.find(
+      (row) =>
+        row.countryCode === code && row.indicatorCode === 'IT.NET.USER.ZS' && row.year === 2022,
+    ),
+  );
+  expect(original.evidence?.observations).toEqual(originalRows);
+
+  await nav(page, 'Compare countries');
+  await year.selectOption('2025');
+  await nav(page, 'Research notebook');
+  const draftText = 'TEST ONLY Unfinished observation for 2025';
+  await page
+    .getByRole('textbox', { name: 'Observed facts — your notes', exact: true })
+    .fill(draftText);
+  await expect.poll(async () => (await stored()).draft.facts).toBe(draftText);
+  const draft = (await stored()).draft;
+  expect(draft.context?.selection.year).toBe(2025);
+  const record = saved.getByRole('button', { name: 'Record findings', exact: true });
+  const edit = saved.getByRole('button', { name: 'Edit findings', exact: true });
+  const outcome = saved.getByRole('combobox', { name: 'Outcome', exact: true });
+  const field = (name: string) => saved.getByLabel(name, { exact: true });
+  const summary = saved.getByRole('textbox', { name: 'What you found', exact: true });
+  const save = saved.getByRole('button', { name: 'Save findings', exact: true });
+
+  await activate(record);
+  await expect(outcome).toBeFocused();
+  await expect(
+    saved.getByRole('heading', { name: 'Your recorded findings', exact: true }),
+  ).toBeVisible();
+  await outcome.selectOption({ label: 'Evidence not found' });
+  await field('Date checked').fill(findings.checkedOn);
+  await summary.fill(notFound);
+  await audit(page);
+  await activate(save);
+  await expect(edit).toBeFocused();
+  await expect(saved).toContainText(notFound);
+  await expect(saved).toContainText('Evidence not found');
+
+  await activate(edit);
+  await expect(outcome).toBeFocused();
+  await outcome.selectOption({ label: 'Judgment deferred' });
+  await activate(save);
+  await expect(saved).toContainText('Judgment deferred');
+
+  await activate(edit);
+  await summary.fill('TEST ONLY Uncommitted findings edit');
+  await activate(saved.getByRole('button', { name: 'Cancel', exact: true }));
+  await expect(edit).toBeFocused();
+  await expect(saved).toContainText(notFound);
+
+  await activate(edit);
+  await outcome.selectOption({ label: 'Evidence found' });
+  await field('Source title or description').fill(findings.sourceTitle);
+  await field('Source URL (optional)').fill(findings.sourceUrl);
+  await field('Evidence reference period').fill(findings.referencePeriod);
+  await field('Locality covered').fill(findings.locality);
+  await field('Population covered').fill(findings.targetGroup);
+  await summary.fill(findings.summary);
+  await field('Remaining uncertainty').fill(findings.uncertainty);
+  await activate(save);
+  await expect(saved).toContainText(findings.summary);
+  await expect.poll(async () => (await stored()).notes).toEqual([{ ...original, findings }]);
+  expect((await stored()).draft).toEqual(draft);
+
+  await page.reload();
+  await expect(year).toHaveValue('2025');
+  await expect(saved).toContainText('KOR · IND · KEN · 2022');
+  await expect(saved.getByTestId('saved-investigation')).toContainText(plannedEvidence);
+  await expect(saved.getByTestId('saved-investigation')).toContainText(
+    'What would a learner pay for enough data to use the course?',
+  );
+  await expect(
+    saved.getByRole('region', { name: 'Calculated observations', exact: true }),
+  ).toContainText('World Bank WDI');
+  await expect(saved).toContainText(findings.summary);
+  await expect(saved).toContainText(findings.uncertainty);
+  await expect(saved.locator(`a[href="${findings.sourceUrl}"]`)).toBeVisible();
+  expect((await stored()).notes).toEqual([{ ...original, findings }]);
+  await audit(page);
+
+  const scope = page.getByRole('combobox', { name: 'Export scope', exact: true });
+  await expect(scope).toHaveValue('comparison');
+  expect(await download(page, 'Export CSV')).not.toContain(findings.summary);
+  await scope.selectOption('related');
+  expect(await download(page, 'Export Markdown')).not.toContain(findings.summary);
+  await scope.selectOption('workspace');
+  const csv = await download(page, 'Export CSV');
+  const row = csv.split('\r\n').find((line) => line.startsWith('"investigation-findings"'));
+  expect(row).toContain(
+    `"${original.id}","${original.createdAt}","KOR;IND;KEN","2022","IT.NET.USER.ZS","${snapshot.runId}"`,
+  );
+  for (const value of Object.values(findings)) expect(row).toContain(`"${value}"`);
+  const md = await download(page, 'Export Markdown');
+  expect(md).toContain('### Your recorded findings');
+  expect(md).toContain(findings.summary);
+  expect(md).toContain(findings.uncertainty);
+  expect(md).toContain(plannedEvidence);
+  await year.selectOption('2022');
+  await scope.selectOption('related');
+  expect(await download(page, 'Export CSV')).toContain(findings.summary);
+  expect(await download(page, 'Export Markdown')).toContain(findings.summary);
 });
 
 test('default and matching exports exclude unrelated saved notes and preview their scope', async ({

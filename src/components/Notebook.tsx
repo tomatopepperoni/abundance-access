@@ -1,15 +1,21 @@
 import { c } from '../content/en';
 import { indicator } from '../lib/query';
 import type { DataStore } from '../lib/query';
-import type { DraftPatch, Research, Selection } from '../lib/research';
-import type { ExportScope } from '../lib/export';
+import type { DraftPatch, Research, ResearchNote, Selection } from '../lib/research';
+import { downloadText, exportNoteCSV, exportNoteMarkdown, type ExportScope } from '../lib/export';
 import { hasDraftContent, sameSelection } from '../lib/research';
 import { Controls } from './Controls';
 import { Icon } from './Icon';
 import { RecordedComparison } from './ComparisonEvidence';
 import { sharingCopy as s } from '../content/sharing-en';
 import { InvestigationFields, SavedInvestigation } from './Investigation';
+import { InvestigationFindings } from './InvestigationFindings';
+import type {
+  InvestigationFindings as Findings,
+  InvestigationFindingsDraft as FindingsDraft,
+} from '../lib/investigation';
 import { ExportControls } from './ExportControls';
+import { exportCopy } from '../content/export-en';
 export function Notebook({
   store,
   research,
@@ -19,6 +25,8 @@ export function Notebook({
   onSelection,
   onToggle,
   onSave,
+  onSaveFindings,
+  onFindingsDraftChange,
   onExport,
   onRemoveEvidence,
 }: {
@@ -30,6 +38,8 @@ export function Notebook({
   onSelection: (patch: Partial<Selection>) => void;
   onToggle: (code: string) => void;
   onSave: () => void;
+  onSaveFindings: (noteId: string, value: Findings) => void;
+  onFindingsDraftChange: (noteId: string, value: FindingsDraft | undefined) => void;
   onExport: (type: 'csv' | 'md', scope: ExportScope) => void;
   onRemoveEvidence: () => void;
 }) {
@@ -40,6 +50,14 @@ export function Notebook({
   const contextChanged = Boolean(
     hasText && context && !sameSelection(context.selection, selection),
   );
+  const downloadNote = (note: ResearchNote, format: 'csv' | 'md') => {
+    const label = [...note.selection.countryCodes, note.selection.year].join('-');
+    downloadText(
+      `abundance-access-note-${label}.${format}`,
+      format === 'csv' ? exportNoteCSV(store, note) : exportNoteMarkdown(store, note),
+      format === 'csv' ? 'text/csv;charset=utf-8' : 'text/markdown;charset=utf-8',
+    );
+  };
   return (
     <>
       <Controls store={store} selection={selection} onChange={onSelection} onToggle={onToggle} />
@@ -184,10 +202,30 @@ export function Notebook({
                     <p>{note.questions || '—'}</p>
                   </div>
                 </div>
+                {note.investigation && (
+                  <InvestigationFindings
+                    value={note.findings}
+                    draft={note.findingsDraft}
+                    onDraftChange={(value) => onFindingsDraftChange(note.id, value)}
+                    onSave={(value) => onSaveFindings(note.id, value)}
+                  />
+                )}
                 <button className="text-link" onClick={() => onSelection(note.selection)}>
                   {c.restoreNote}
                   <Icon name="arrow" size={14} />
                 </button>
+                <details className="note-export">
+                  <summary>{c.exportNote}</summary>
+                  <p className="small muted">{exportCopy.note.help}</p>
+                  <div className="button-group">
+                    <button className="button outline" onClick={() => downloadNote(note, 'csv')}>
+                      {c.exportNoteCsv}
+                    </button>
+                    <button className="button outline" onClick={() => downloadNote(note, 'md')}>
+                      {c.exportNoteMarkdown}
+                    </button>
+                  </div>
+                </details>
               </article>
             ))}
           </div>

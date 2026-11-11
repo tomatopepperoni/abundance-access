@@ -1,8 +1,9 @@
 import { compare, definitions, indicator } from './query';
 import type { DataStore } from './query';
-import { hasDraftContent, sameSelection, type Research } from './research';
+import { hasDraftContent, sameSelection, type Research, type ResearchNote } from './research';
 import { formatDifference, type ComparisonSummary } from './analysis';
 import { exportCopy } from '../content/export-en';
+import { findingsCopy } from '../content/findings-en';
 import { frozenSourceReference } from './provenance';
 
 export const exportScopes = ['comparison', 'related', 'workspace'] as const;
@@ -38,7 +39,8 @@ export function canExport(store: DataStore, research: Research, scope: ExportSco
 
 export function csvCell(value: string | number | null) {
   const text = value === null ? '' : String(value);
-  const safe = typeof value === 'string' && /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  const safe =
+    typeof value === 'string' && /^(?:\s*[=+\-@]|[\t\r\n])/.test(text) ? `'${text}` : text;
   return `"${safe.replaceAll('"', '""')}"`;
 }
 export function reportRows(store: DataStore, research: Research) {
@@ -49,8 +51,29 @@ export function reportRows(store: DataStore, research: Research) {
     research.selection.year,
   );
 }
+
+type NoteExport = { scope: 'note'; draft: null; notes: [ResearchNote] };
+type ExportContent = ReturnType<typeof exportSelection> | NoteExport;
+const selectNote = (note: ResearchNote): NoteExport => ({
+  scope: 'note',
+  draft: null,
+  notes: [note],
+});
+
 export function exportCSV(store: DataStore, research: Research, scope: ExportScope = 'comparison') {
-  const included = exportSelection(store, research, scope);
+  return renderCSV(store, exportSelection(store, research, scope), reportRows(store, research));
+}
+
+export function exportNoteCSV(store: DataStore, note: ResearchNote) {
+  return renderCSV(store, selectNote(note), []);
+}
+
+function renderCSV(
+  store: DataStore,
+  included: ExportContent,
+  comparisonRows: ReturnType<typeof reportRows>,
+) {
+  const { scope } = included;
   const headers = [
     'recordType',
     'exportScope',
@@ -93,8 +116,18 @@ export function exportCSV(store: DataStore, research: Research, scope: ExportSco
     'investigationStatus',
     'investigationDecisionToInform',
     'investigationStatusMeaning',
+    'findingsStatus',
+    'findingsSourceTitle',
+    'findingsSourceUrl',
+    'findingsCheckedOn',
+    'findingsReferencePeriod',
+    'findingsLocality',
+    'findingsTargetGroup',
+    'findingsSummary',
+    'findingsUncertainty',
+    'findingsMeaning',
   ];
-  const rows: Record<string, string | number | null>[] = reportRows(store, research).map((o) => ({
+  const rows: Record<string, string | number | null>[] = comparisonRows.map((o) => ({
     recordType: 'observation',
     exportScope: scope,
     countryCode: o.countryCode,
@@ -118,7 +151,7 @@ export function exportCSV(store: DataStore, research: Research, scope: ExportSco
   rows.unshift({
     recordType: 'export-metadata',
     exportScope: scope,
-    datasetRunId: store.snapshot.runId,
+    datasetRunId: scope === 'note' ? included.notes[0].datasetRunId : store.snapshot.runId,
   });
   if (included.draft) {
     const context = included.draft.context;
@@ -145,6 +178,9 @@ export function exportCSV(store: DataStore, research: Research, scope: ExportSco
       contextStatus: 'recorded',
       observedFacts: note.facts,
       additionalQuestions: note.questions,
+      ...(scope === 'note'
+        ? { status: note.evidence ? 'recorded-evidence' : 'no-recorded-evidence' }
+        : {}),
     })),
   );
   const appendEvidence = (summary: ComparisonSummary, noteId: string) => {
@@ -217,12 +253,35 @@ export function exportCSV(store: DataStore, research: Research, scope: ExportSco
     });
   if (included.draft?.investigation)
     appendInvestigation(included.draft.investigation, 'draft', included.draft.context);
-  for (const note of included.notes)
-    if (note.investigation)
-      appendInvestigation(note.investigation, note.id, {
-        selection: note.selection,
-        datasetRunId: note.datasetRunId,
+  for (const note of included.notes) {
+    if (!note.investigation) continue;
+    appendInvestigation(note.investigation, note.id, {
+      selection: note.selection,
+      datasetRunId: note.datasetRunId,
+    });
+    const findings = note.findings;
+    if (findings)
+      rows.push({
+        recordType: 'investigation-findings',
+        noteId: note.id,
+        noteCreatedAt: note.createdAt,
+        noteCountryCodes: note.selection.countryCodes.join(';'),
+        noteYear: note.selection.year,
+        noteIndicator: note.selection.indicatorCode,
+        noteDatasetRunId: note.datasetRunId,
+        contextStatus: 'recorded',
+        findingsStatus: findings.status,
+        findingsSourceTitle: findings.sourceTitle,
+        findingsSourceUrl: findings.sourceUrl,
+        findingsCheckedOn: findings.checkedOn,
+        findingsReferencePeriod: findings.referencePeriod,
+        findingsLocality: findings.locality,
+        findingsTargetGroup: findings.targetGroup,
+        findingsSummary: findings.summary,
+        findingsUncertainty: findings.uncertainty,
+        findingsMeaning: exportCopy.findingsMeaning,
       });
+  }
   return (
     '\uFEFF' +
     [
@@ -240,16 +299,37 @@ export function exportMarkdown(
   research: Research,
   scope: ExportScope = 'comparison',
 ) {
-  const included = exportSelection(store, research, scope);
+  return renderMarkdown(
+    store,
+    exportSelection(store, research, scope),
+    renderComparisonMarkdown(store, research),
+  );
+}
+
+export function exportNoteMarkdown(store: DataStore, note: ResearchNote) {
+  return renderMarkdown(store, selectNote(note), '');
+}
+
+function frozenSourceText(
+  store: DataStore,
+  row: ReturnType<typeof reportRows>[number],
+  snapshotRunId = store.snapshot.runId,
+) {
+  if (snapshotRunId !== store.snapshot.runId) return '';
+  const reference = frozenSourceReference(store, row);
+  return reference
+    ? `; frozen raw response: ${reference.url}; SHA-256: ${reference.sha256}; response record index: ${reference.rawRecordIndex}`
+    : '';
+}
+
+function renderComparisonMarkdown(store: DataStore, research: Research) {
   const escape = (s: string) => s.replaceAll('|', '\\|').replaceAll('\n', ' ');
   const rows = reportRows(store, research);
-  const frozen = (row: (typeof rows)[number], snapshotRunId = store.snapshot.runId) => {
-    if (snapshotRunId !== store.snapshot.runId) return '';
-    const reference = frozenSourceReference(store, row);
-    return reference
-      ? `; frozen raw response: ${reference.url}; SHA-256: ${reference.sha256}; response record index: ${reference.rawRecordIndex}`
-      : '';
-  };
+  return `\n## Current comparison\n\n- Dataset: ${store.snapshot.runId}\n- Collection completed (UTC): ${store.snapshot.fetchedAt}\n- Manual metadata review: ${definitions.reviewedAt}\n- Selected year: ${research.selection.year}\n- Focused indicator: ${research.selection.indicatorCode}\n- Countries/economies: ${research.selection.countryCodes.join(', ')}\n\n| Country/economy | Indicator | Year | Value | Unit | Status |\n|---|---|---|---|---|---|\n${rows.map((o) => `| ${escape(o.countryName)} | ${o.indicatorCode} | ${o.year} | ${o.value ?? 'No observation'} | ${o.unit} | ${o.status} |`).join('\n')}\n\n## Source trail\n\n${rows.map((o) => `- ${o.countryCode}, ${o.indicatorCode}, ${o.year}: ${o.sourceOrganization}; distributed by World Bank; fetched ${o.fetchedAt}; ${o.sourceUrl}${frozenSourceText(store, o)}`).join('\n')}\n`;
+}
+
+function renderMarkdown(store: DataStore, included: ExportContent, comparisonSection: string) {
+  const { scope } = included;
   const note = (facts: string, questions: string) =>
     `\n### User-authored observations\n\n${facts || '(No observations recorded)'}\n\n### Additional research questions — not established conclusions\n\n${questions || '(No questions recorded)'}\n`;
   const context = included.draft?.context;
@@ -267,11 +347,32 @@ export function exportMarkdown(
       })
       .join(
         '\n',
-      )}\n\nRecorded source observations:\n\n${summary.observations.map((row) => `- ${row.countryCode}, ${row.year}: ${row.value ?? 'No observation'} ${row.unit}; ${row.status}; ${row.sourceOrganization}; distributed by ${row.distributor}; fetched ${row.fetchedAt}; raw ${row.rawFile ?? 'none'}, row ${row.rawRow ?? 'none'}; ${row.sourceUrl}${frozen(row, summary.snapshotRunId)}`).join('\n')}\n`;
+      )}\n\nRecorded source observations:\n\n${summary.observations.map((row) => `- ${row.countryCode}, ${row.year}: ${row.value ?? 'No observation'} ${row.unit}; ${row.status}; ${row.sourceOrganization}; distributed by ${row.distributor}; fetched ${row.fetchedAt}; raw ${row.rawFile ?? 'none'}, row ${row.rawRow ?? 'none'}; ${row.sourceUrl}${frozenSourceText(store, row, summary.snapshotRunId)}`).join('\n')}\n`;
   };
   const investigation = (plan?: Research['draft']['investigation']) => {
     if (!plan) return '';
     return `\n### Follow-up investigation — user-authored plan\n\n- Topic: ${plan.topic}\n- Target learners or group: ${plan.targetGroup || '(Not specified)'}\n- Locality: ${plan.locality || '(Not specified)'}\n- Evidence needed: ${plan.evidenceNeeded || '(Not specified)'}\n- Source to check: ${plan.sourceToCheck || '(Not specified)'}\n- Status: ${plan.status}\n- Decision to inform: ${plan.decisionToInform || '(Not specified)'}\n\n${exportCopy.planStatusMeaning}\n`;
+  };
+  const findingsSection = (findings?: ResearchNote['findings']) => {
+    if (!findings) return '';
+    const fields = [
+      'status',
+      'sourceTitle',
+      'sourceUrl',
+      'checkedOn',
+      'referencePeriod',
+      'locality',
+      'targetGroup',
+      'summary',
+      'uncertainty',
+    ] as const;
+    const inlineText = (s: string) =>
+      s.replace(/[\r\n]+/g, ' ').replace(/[\\<>\[\]*_`|~]/g, '\\$&');
+    const lines = fields.map((field) => {
+      const value = field === 'status' ? findingsCopy.statuses[findings.status] : findings[field];
+      return `- ${findingsCopy.fields[field]}: ${inlineText(value) || '(Not specified)'}`;
+    });
+    return `\n### ${findingsCopy.heading}\n\n${exportCopy.findingsMeaning}\n\n${lines.join('\n')}\n`;
   };
   const draftContext = context
     ? `Draft dataset: ${context.datasetRunId}\n\nDraft countries/economies: ${context.selection.countryCodes.join(', ')}\n\nDraft indicator: ${context.selection.indicatorCode}\n\nDraft year: ${context.selection.year}`
@@ -279,10 +380,20 @@ export function exportMarkdown(
   const draftSection = included.draft
     ? `\n## Current draft — separate recorded context\n\n${draftContext}\n${evidence(included.draft.evidence)}${note(included.draft.facts, included.draft.questions)}${investigation(included.draft.investigation)}`
     : '';
+  const noteEvidence = (n: ResearchNote) =>
+    scope === 'note' && !n.evidence ? `\n${exportCopy.note.noEvidence}\n` : evidence(n.evidence);
   const notesSection = included.notes.length
-    ? `\n## Saved notes\n\n${included.notes.map((n) => `### ${n.createdAt}\n\nDataset: ${n.datasetRunId}; ${n.selection.countryCodes.join(', ')}; ${n.selection.indicatorCode}; ${n.selection.year}\n${evidence(n.evidence)}${note(n.facts, n.questions)}${investigation(n.investigation)}`).join('\n')}`
+    ? `\n## Saved notes\n\n${included.notes.map((n) => `### ${n.createdAt}\n\nDataset: ${n.datasetRunId}; ${n.selection.countryCodes.join(', ')}; ${n.selection.indicatorCode}; ${n.selection.year}\n${noteEvidence(n)}${note(n.facts, n.questions)}${investigation(n.investigation)}${findingsSection(n.findings)}`).join('\n')}`
     : '';
-  return `# Abundance Access — research snapshot\n\nAnnual statistics, not live conditions.\n\nExport scope: **${exportCopy.options[scope]}** (${scope}).\n\n${exportCopy.help[scope]}\n\nIncluded notes: ${included.notes.length} saved; ${included.draft ? 1 : 0} draft.\n\n## Current comparison\n\n- Dataset: ${store.snapshot.runId}\n- Collection completed (UTC): ${store.snapshot.fetchedAt}\n- Manual metadata review: ${definitions.reviewedAt}\n- Selected year: ${research.selection.year}\n- Focused indicator: ${research.selection.indicatorCode}\n- Countries/economies: ${research.selection.countryCodes.join(', ')}\n\n| Country/economy | Indicator | Year | Value | Unit | Status |\n|---|---|---|---|---|---|\n${rows.map((o) => `| ${escape(o.countryName)} | ${o.indicatorCode} | ${o.year} | ${o.value ?? 'No observation'} | ${o.unit} | ${o.status} |`).join('\n')}\n\n## Source trail\n\n${rows.map((o) => `- ${o.countryCode}, ${o.indicatorCode}, ${o.year}: ${o.sourceOrganization}; distributed by World Bank; fetched ${o.fetchedAt}; ${o.sourceUrl}${frozen(o)}`).join('\n')}\n${draftSection}${notesSection}\n## Definitions and limits\n\n${definitions.indicators.map((i) => `- **${i.name}**: ${i.definition} ${i.limitation} ${i.metadataUrl}`).join('\n')}\n\nNo composite score, individual diagnosis, causal explanation, or proof of educational effectiveness is provided. Country averages can conceal local, gender, income, and accessibility differences. Missing observations have not been filled with zero or carried forward. Values above 100 in ${indicator('SE.SEC.CMPT.LO.ZS').shortName} are retained.\n`;
+  const title = scope === 'note' ? exportCopy.note.title : exportCopy.options[scope];
+  const help = scope === 'note' ? exportCopy.note.help : exportCopy.help[scope];
+  const indicatorDefinitions =
+    scope === 'note'
+      ? [indicator(included.notes[0].selection.indicatorCode)]
+      : definitions.indicators;
+  const definitionsHeading =
+    scope === 'note' ? exportCopy.note.definitionHeading : 'Definitions and limits';
+  return `# Abundance Access — research snapshot\n\nAnnual statistics, not live conditions.\n\nExport scope: **${title}** (${scope}).\n\n${help}\n\nIncluded notes: ${included.notes.length} saved; ${included.draft ? 1 : 0} draft.\n${comparisonSection}${draftSection}${notesSection}\n## ${definitionsHeading}\n\n${indicatorDefinitions.map((i) => `- **${i.name}**: ${i.definition} ${i.limitation} ${i.metadataUrl}`).join('\n')}\n\nNo composite score, individual diagnosis, causal explanation, or proof of educational effectiveness is provided. Country averages can conceal local, gender, income, and accessibility differences. Missing observations have not been filled with zero or carried forward. Values above 100 in ${indicator('SE.SEC.CMPT.LO.ZS').shortName} are retained.\n`;
 }
 export function downloadText(name: string, text: string, type = 'text/plain;charset=utf-8') {
   const url = URL.createObjectURL(new Blob([text], { type }));

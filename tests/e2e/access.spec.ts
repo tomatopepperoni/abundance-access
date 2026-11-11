@@ -20,6 +20,14 @@ async function nav(page: Page, name: string) {
   if (await menu.isVisible()) await menu.click();
   await page.getByRole('link', { name, exact: true }).click();
 }
+async function resetDialog(page: Page) {
+  const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole('button', { name: 'Reset research workspace', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Reset research workspace?', exact: true });
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
 async function audit(page: Page) {
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
@@ -253,9 +261,23 @@ test('real-data country selection → same-year comparison → notebook → expo
     '2022',
   );
   await audit(page);
-  const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
-  if (await menu.isVisible()) await menu.click();
-  await page.getByRole('button', { name: 'Reset research workspace', exact: true }).click();
+  const readWorkspace = () => page.evaluate((k) => localStorage.getItem(k), key);
+  const original = await readWorkspace();
+  expect(original).toContain('29.40589905');
+  const dialog = await resetDialog(page);
+  await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+  await audit(page);
+  await page.keyboard.press('Enter');
+  await expect(dialog).toBeHidden();
+  expect(await readWorkspace()).toBe(original);
+  await resetDialog(page);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('.saved-note')).toHaveCount(1);
+  expect(await readWorkspace()).toBe(original);
+
+  await resetDialog(page);
+  await dialog.getByRole('button', { name: 'Reset workspace', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Compare internet, electricity and education by country.' }),
   ).toBeVisible();
@@ -264,6 +286,97 @@ test('real-data country selection → same-year comparison → notebook → expo
     'old-project-selection',
   );
   expect(errors).toEqual([]);
+});
+
+test('unreadable workspace stays byte-for-byte intact through browsing and has a download', async ({
+  page,
+}) => {
+  const original = '{\n  "schemaVersion": 999,\n  "privateText": "TEST ONLY: 연구 노트"\n}\n';
+  await page.addInitScript(
+    ({ storageKey, value }) => {
+      if (sessionStorage.getItem('test:unreadable-workspace-seeded')) return;
+      localStorage.setItem(storageKey, value);
+      sessionStorage.setItem('test:unreadable-workspace-seeded', 'true');
+    },
+    { storageKey: key, value: original },
+  );
+  const readWorkspace = () => page.evaluate((k) => localStorage.getItem(k), key);
+  const protectedMessage = page.getByText(
+    'Your saved workspace could not be read. The original data is preserved in this browser. Changes are kept for this session.',
+    { exact: true },
+  );
+  await page.goto('./#overview');
+  await expect(protectedMessage).toBeVisible();
+  expect(await readWorkspace()).toBe(original);
+
+  const query = new URLSearchParams({
+    v: '1',
+    countries: 'KOR,IND,KEN',
+    year: '2023',
+    indicator: 'IT.NET.USER.ZS',
+    snapshot: snapshot.runId,
+  });
+  await page.goto(`./#compare?${query}`);
+  await page.reload();
+  const year = page.getByRole('combobox', { name: 'Observation year', exact: true });
+  await expect(year).toHaveValue('2023');
+  await expect(protectedMessage).toBeVisible();
+  expect(await readWorkspace()).toBe(original);
+  await year.selectOption('2025');
+  await nav(page, 'Research notebook');
+  const sessionNote = 'TEST ONLY note created while the original workspace was protected';
+  await page
+    .getByRole('textbox', { name: 'Observed facts — your notes', exact: true })
+    .fill(sessionNote);
+  await page.getByRole('button', { name: 'Add note with recorded context', exact: true }).click();
+  await expect(page.locator('.saved-note')).toContainText(sessionNote);
+  await expect(protectedMessage).toBeVisible();
+  expect(await readWorkspace()).toBe(original);
+
+  const pending = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download preserved workspace', exact: true }).click();
+  expect(await readFile((await (await pending).path())!)).toEqual(Buffer.from(original, 'utf8'));
+  await page.reload();
+  await expect(protectedMessage).toBeVisible();
+  await expect(page.locator('.saved-note')).toHaveCount(0);
+  expect(await readWorkspace()).toBe(original);
+
+  const dialog = await resetDialog(page);
+  await expect(dialog).toContainText(/original|preserved/i);
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  expect(await readWorkspace()).toBe(original);
+});
+
+test('reset cannot delete an original workspace when reading is blocked', async ({ page }) => {
+  const original = 'TEST ONLY saved workspace hidden behind a read failure';
+  await page.addInitScript(
+    ({ storageKey, value }) => {
+      localStorage.setItem(storageKey, value);
+      const getItem = Storage.prototype.getItem;
+      Storage.prototype.getItem = function (name: string) {
+        if (name === storageKey) throw new DOMException('Test read blocked', 'SecurityError');
+        return getItem.call(this, name);
+      };
+    },
+    { storageKey: key, value: original },
+  );
+  const readWorkspace = () => page.evaluate((k) => Reflect.get(localStorage, k), key);
+  await page.goto('./#notes');
+  await expect(page.locator('.storage-status')).toContainText('Session only');
+  await page
+    .getByRole('textbox', { name: 'Observed facts — your notes', exact: true })
+    .fill('TEST ONLY session note while reading is blocked');
+  await page.getByRole('button', { name: 'Add note with recorded context', exact: true }).click();
+  await expect(page.locator('.saved-note')).toHaveCount(1);
+  expect(await readWorkspace()).toBe(original);
+  const dialog = await resetDialog(page);
+  await expect(dialog).toContainText(/session/i);
+  await dialog.getByRole('button', { name: 'Reset workspace', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await nav(page, 'Research notebook');
+  await expect(page.locator('.saved-note')).toHaveCount(0);
+  expect(await readWorkspace()).toBe(original);
 });
 
 test('map and table agree for every mapped country across measures, years and missing values', async ({

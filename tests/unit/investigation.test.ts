@@ -3,15 +3,17 @@ import { expect, it } from 'vitest';
 import { snapshotSchema } from '../../src/lib/schema';
 import { createStore } from '../../src/lib/query';
 import { comparisonSummary } from '../../src/lib/analysis';
-import { emptyInvestigation } from '../../src/lib/investigation';
+import { emptyInvestigation, type InvestigationFindings } from '../../src/lib/investigation';
 import {
   addDraftNote,
   assignDraftContext,
   attachCalculatedEvidence,
   defaultResearch,
   editDraft,
+  editInvestigationFindingsDraft,
   hasDraftContent,
   loadResearch,
+  recordInvestigationFindings,
   removeCalculatedEvidence,
   saveResearch,
   startInvestigation,
@@ -137,4 +139,89 @@ it('continues to restore earlier version-two and version-one notes without addin
   expect(restored.draft.investigation).toBeUndefined();
   expect(restored.draft.context).toBeNull();
   expect(restored.draft.facts).toBe('Earlier text');
+});
+
+const findings: InvestigationFindings = {
+  status: 'deferred',
+  sourceTitle: '',
+  sourceUrl: '',
+  checkedOn: '2026-11-09',
+  referencePeriod: '',
+  locality: '',
+  targetGroup: '',
+  summary: '',
+  uncertainty: 'TEST ONLY Source coverage requires review',
+};
+
+it('records one result by plan id and preserves the original note and other workspace state', () => {
+  const runId = store.snapshot.runId;
+  const original = defaultResearch(store);
+  const standalone = addDraftNote(
+    editDraft(original, { facts: 'TEST ONLY Standalone note' }, runId),
+    'note',
+    '2026-11-09T12:00:00Z',
+  );
+  const saved = addDraftNote(
+    startInvestigation(standalone, 'connection-costs', runId),
+    'plan',
+    '2026-11-09T12:00:00Z',
+  );
+  expect(validateResearch(saved, store.snapshot)).toEqual(saved);
+  expect(recordInvestigationFindings(saved, 'note', findings)).toBe(saved);
+  expect(recordInvestigationFindings(saved, 'unknown', findings)).toBe(saved);
+  const recorded = recordInvestigationFindings(saved, 'plan', findings);
+  const revised = { ...findings, status: 'not-found' as const };
+  const updated = recordInvestigationFindings(recorded, 'plan', revised);
+  expect(updated).toEqual({
+    ...saved,
+    notes: [saved.notes[0], { ...saved.notes[1], findings: revised }],
+  });
+  expect(validateResearch(updated, store.snapshot)).toEqual(updated);
+});
+
+it('validates finding dates, HTTP source URLs and evidence fields', () => {
+  const plan = addDraftNote(
+    startInvestigation(defaultResearch(store), 'connection-costs', store.snapshot.runId),
+    'plan',
+    '2026-11-09T12:00:00Z',
+  );
+  for (const invalid of [
+    { ...findings, checkedOn: '2026-02-30' },
+    { ...findings, sourceUrl: 'javascript:alert(1)' },
+    { ...findings, status: 'found' as const },
+  ]) {
+    expect(() => recordInvestigationFindings(plan, 'plan', invalid)).toThrow();
+  }
+});
+
+it('round-trips incomplete drafts by plan and clears only the committed or discarded draft', () => {
+  const runId = store.snapshot.runId;
+  const time = '2026-11-09T12:00:00Z';
+  const first = addDraftNote(
+    startInvestigation(defaultResearch(store), 'connection-costs', runId),
+    'first',
+    time,
+  );
+  const second = addDraftNote(startInvestigation(first, 'devices', runId), 'second', time);
+  const recorded = recordInvestigationFindings(second, 'first', findings);
+  const incomplete = {
+    ...findings,
+    status: 'found' as const,
+    sourceUrl: 'https://',
+    checkedOn: '',
+    summary: '  TEST ONLY Unfinished findings  ',
+  };
+  const firstDraft = editInvestigationFindingsDraft(recorded, 'first', incomplete);
+  const drafted = editInvestigationFindingsDraft(firstDraft, 'second', {
+    ...incomplete,
+    summary: 'TEST ONLY Another plan',
+  });
+  const restored = validateResearch(JSON.parse(JSON.stringify(drafted)), store.snapshot);
+  expect(restored.notes[0]).toEqual({ ...recorded.notes[0], findingsDraft: incomplete });
+  expect(restored.notes[1].findings).toBeUndefined();
+  expect(() => recordInvestigationFindings(restored, 'first', incomplete)).toThrow();
+  const discarded = editInvestigationFindingsDraft(restored, 'first', undefined);
+  expect(discarded.notes).toEqual([recorded.notes[0], restored.notes[1]]);
+  const saved = recordInvestigationFindings(discarded, 'second', findings);
+  expect(saved.notes).toEqual([recorded.notes[0], { ...recorded.notes[1], findings }]);
 });

@@ -9,18 +9,25 @@ import {
   assignDraftContext,
   defaultResearch,
   editDraft,
+  editInvestigationFindingsDraft,
   hasDraftContent,
   loadResearch,
   resetResearch,
   removeCalculatedEvidence,
+  recordInvestigationFindings,
   replaceComparisonCountry,
   startInvestigation,
   RESEARCH_SCHEMA_VERSION,
   saveResearch,
 } from './lib/research';
 import type { DraftPatch, Research, Selection } from './lib/research';
-import type { InvestigationTopic } from './lib/investigation';
+import type {
+  InvestigationFindings,
+  InvestigationFindingsDraft,
+  InvestigationTopic,
+} from './lib/investigation';
 import { investigationCopy as investigation } from './content/investigation-en';
+import { findingsCopy } from './content/findings-en';
 import { downloadText, exportCSV, exportMarkdown } from './lib/export';
 import type { ExportScope } from './lib/export';
 import { c } from './content/en';
@@ -107,6 +114,8 @@ function Brand() {
 }
 function Dashboard({ store }: { store: DataStore }) {
   const layout = useRef<HTMLDivElement>(null);
+  const resetDialog = useRef<HTMLDialogElement>(null);
+  const resetCancel = useRef<HTMLButtonElement>(null);
   const [loaded] = useState(() => {
     const shared = readSharedComparison(window.location.hash, store);
     let saved;
@@ -122,11 +131,12 @@ function Dashboard({ store }: { store: DataStore }) {
     };
   });
   const [shared, setShared] = useState<SharedComparison>(loaded.shared);
+  const [readFailure, setReadFailure] = useState(loaded.status === 'ok' ? null : loaded);
   const [research, setResearch] = useState(loaded.data),
-    [storageAvailable, setStorageAvailable] = useState(loaded.status !== 'unavailable');
+    [storageAvailable, setStorageAvailable] = useState(loaded.status === 'ok');
   const [view, setView] = useState<View>(readView),
     [navOpen, setNavOpen] = useState(false),
-    [notice, setNotice] = useState(loaded.status === 'invalid' ? c.restored : '');
+    [notice, setNotice] = useState('');
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 800px)').matches);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -139,12 +149,13 @@ function Dashboard({ store }: { store: DataStore }) {
   const sidebarHidden = mobile ? !navOpen : sidebarCollapsed;
   const sidebarToggleLabel = sidebarCollapsed ? sidebarCopy.expand : sidebarCopy.collapse;
   useEffect(() => {
+    if (readFailure) return;
     try {
       setStorageAvailable(saveResearch(research, window.localStorage, store));
     } catch {
       setStorageAvailable(false);
     }
-  }, [research, store]);
+  }, [research, store, readFailure]);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 800px)');
     const handler = () => {
@@ -175,7 +186,7 @@ function Dashboard({ store }: { store: DataStore }) {
   useEffect(() => {
     if (!navOpen) return;
     const handler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !resetDialog.current?.open) {
         setNavOpen(false);
         document.getElementById('menu-toggle')?.focus();
       }
@@ -264,13 +275,21 @@ function Dashboard({ store }: { store: DataStore }) {
     navigate('compare');
   };
   const reset = () => {
-    try {
-      resetResearch(window.localStorage);
-    } catch {
-      /* Memory state remains usable. */
+    resetDialog.current?.close();
+    if (readFailure?.status !== 'unavailable') {
+      try {
+        if (!resetResearch(window.localStorage)) {
+          setNotice(c.resetFailed);
+          return;
+        }
+      } catch {
+        setNotice(c.resetFailed);
+        return;
+      }
+      setReadFailure(null);
     }
     setResearch(defaultResearch(store));
-    setNotice(c.resetDone);
+    setNotice(readFailure?.status === 'unavailable' ? c.resetSessionDone : c.resetDone);
     navigate('overview');
   };
   const saveNote = () => {
@@ -284,6 +303,13 @@ function Dashboard({ store }: { store: DataStore }) {
       id = crypto.randomUUID();
     setResearch((previous) => addDraftNote(previous, id, createdAt));
     setNotice(c.noteSaved);
+  };
+  const saveFindings = (noteId: string, value: InvestigationFindings) => {
+    setResearch((previous) => recordInvestigationFindings(previous, noteId, value));
+    setNotice(findingsCopy.saved);
+  };
+  const changeFindingsDraft = (noteId: string, value: InvestigationFindingsDraft | undefined) => {
+    setResearch((previous) => editInvestigationFindingsDraft(previous, noteId, value));
   };
   const onExport = (type: 'csv' | 'md', scope: ExportScope) => {
     if (
@@ -420,12 +446,48 @@ function Dashboard({ store }: { store: DataStore }) {
             <Icon name="info" size={16} />
             {c.annual}
           </p>
-          <button className="text-link reset-button" onClick={reset}>
+          <button
+            className="text-link reset-button"
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => {
+              resetDialog.current?.showModal();
+              resetCancel.current?.focus();
+            }}
+          >
             <Icon name="reset" size={15} />
             {c.reset}
           </button>
         </div>
       </aside>
+      <dialog
+        ref={resetDialog}
+        className="workspace-reset-dialog"
+        aria-labelledby="reset-workspace-title"
+        aria-describedby="reset-workspace-help"
+      >
+        <h2 id="reset-workspace-title">{c.resetTitle}</h2>
+        <p id="reset-workspace-help">
+          {readFailure?.status === 'invalid'
+            ? c.resetUnreadable
+            : readFailure?.status === 'unavailable'
+              ? c.resetSessionHelp
+              : c.resetHelp}
+        </p>
+        <div className="button-group">
+          <button
+            type="button"
+            ref={resetCancel}
+            className="button outline"
+            onClick={() => resetDialog.current?.close()}
+          >
+            {c.resetCancel}
+          </button>
+          <button type="button" className="button dark" onClick={reset}>
+            {c.resetConfirm}
+          </button>
+        </div>
+      </dialog>
       <SidebarResizer containerRef={layout} />
       <div className="workspace" id="research-workspace">
         <header className="topbar">
@@ -471,6 +533,24 @@ function Dashboard({ store }: { store: DataStore }) {
           <div className={`notice ${notice ? 'visible' : ''}`} role="status" aria-live="polite">
             {notice}
           </div>
+          {readFailure && (
+            <div className="share-warning">
+              <p role="alert">
+                {readFailure.status === 'invalid' ? c.workspacePreserved : c.workspaceReadBlocked}
+              </p>
+              {readFailure.status === 'invalid' && (
+                <button
+                  type="button"
+                  className="button outline compact"
+                  onClick={() =>
+                    downloadText('abundance-access-preserved-workspace.json', readFailure.raw)
+                  }
+                >
+                  {c.downloadPreserved}
+                </button>
+              )}
+            </div>
+          )}
           {shared.status === 'invalid' && (
             <div className="share-warning" role="alert">
               {s.invalid}
@@ -630,6 +710,8 @@ function Dashboard({ store }: { store: DataStore }) {
               onSelection={select}
               onToggle={toggle}
               onSave={saveNote}
+              onSaveFindings={saveFindings}
+              onFindingsDraftChange={changeFindingsDraft}
               onExport={onExport}
               onRemoveEvidence={() => setResearch((previous) => removeCalculatedEvidence(previous))}
             />

@@ -13,7 +13,7 @@ export const analysisCopy = {
   missing: 'Missing values',
   calculated: 'Calculated observations',
   recordedBody:
-    'Recorded arithmetic from the source snapshot, separate from your notes and interpretation. Changing filters does not change this recorded evidence.',
+    'Calculated from the saved World Bank WDI observations. This evidence stays tied to the original comparison.',
   calculatedBody:
     'Same-year differences for the chart indicator. These are arithmetic results, not explanations or a country ranking.',
   percentagePoints: 'pp = percentage points.',

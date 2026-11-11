@@ -6,7 +6,8 @@
   min-height: 44px;
   font-size: 15px;
 }
-.map-replace-dialog {
+.map-replace-dialog,
+.workspace-reset-dialog {
   width: min(440px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
@@ -18,13 +19,18 @@
   color: var(--ink);
   box-shadow: 0 16px 60px #17372b38;
 }
-.map-replace-dialog::backdrop {
+.map-replace-dialog::backdrop,
+.workspace-reset-dialog::backdrop {
   background: #102c235f;
 }
-.map-replace-dialog h3 {
+.map-replace-dialog h3,
+.workspace-reset-dialog h2 {
   font-size: 23px;
   line-height: 1.35;
   margin: 0 0 10px;
+}
+.workspace-reset-dialog .button-group {
+  margin-top: 20px;
 }
 .map-replace-options {
   display: grid;
@@ -97,7 +103,8 @@
   margin-top: 8px;
 }
 @media (max-width: 650px) {
-  .map-replace-dialog {
+  .map-replace-dialog,
+  .workspace-reset-dialog {
     padding: 20px;
   }
   .map-finder-actions > .map-replace-control {
@@ -324,6 +331,17 @@
 .saved-investigation dd {
   white-space: pre-wrap;
 }
+.saved-findings > p {
+  margin-block: 6px 12px;
+}
+.saved-findings .investigation-fields {
+  margin-block: 12px 0;
+}
+.findings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .export-controls {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -447,12 +465,19 @@
   margin-top: 5px;
 }
 .completeness-details summary,
-.calculation-sources summary {
+.calculation-sources summary,
+.note-export summary {
   cursor: pointer;
   color: var(--teal);
   min-height: 32px;
   padding-block: 4px;
   font-weight: 600;
+}
+.note-export {
+  margin-top: 12px;
+}
+.note-export > p {
+  margin-block: 6px 10px;
 }
 .completeness-details table {
   width: 100%;

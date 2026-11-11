@@ -31,6 +31,7 @@ export const investigationCopy = {
   sourceToCheck: 'Source to check',
   sourcePlaceholder: 'A local survey, provider tariff, organisation, report or URL.',
   status: 'Your investigation status',
+  savedStatus: 'Status when plan was saved',
   statuses: {
     unverified: 'Not checked',
     checking: 'In progress',
