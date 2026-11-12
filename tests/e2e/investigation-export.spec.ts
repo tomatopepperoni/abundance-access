@@ -48,6 +48,8 @@ test('a comparison becomes a contextual investigation plan, survives reload and 
   await expect(page.getByTestId('draft-context')).toHaveText('Internet use · 2022');
   await expect(page.getByTestId('draft-calculated-evidence')).toContainText('+41.3 pp');
   const plan = page.getByTestId('investigation-plan');
+  await expect(plan).toBeFocused();
+  await expect(plan).toBeInViewport();
   await expect(
     plan.getByRole('combobox', { name: 'Your investigation status', exact: true }),
   ).toHaveValue('unverified');

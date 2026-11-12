@@ -37,14 +37,16 @@ export const c = {
   skip: 'Skip to main content',
   openNav: 'Open navigation',
   closeNav: 'Close navigation',
-  heroEyebrow: 'COUNTRY COMPARISON · WORLD BANK DATA',
-  heroTitle: 'Compare internet, electricity and education by country.',
+  heroEyebrow: 'ONLINE LEARNING ACCESS',
+  heroTitle: 'Compare countries. Plan what to investigate.',
   heroBody:
-    'Planning support for a free online course? Compare internet use, electricity access and schooling context in candidate countries using annual World Bank statistics. Use the differences to choose what local evidence to collect next.',
+    'Use World Bank data on internet use, electricity access and schooling to decide what local evidence to collect before supporting online learners.',
   heroCTA: 'Try Korea, India and Kenya (2022)',
   exploreCTA: 'Choose other countries',
-  heroLimit:
-    'Example use: a nonprofit reviews candidate countries before researching local connection costs, devices and power reliability. This tool helps frame that investigation; national averages cannot decide where a programme will succeed.',
+  exampleTitle: 'Internet use in 2022',
+  exampleSource: 'World Bank WDI · % of population',
+  exampleQuestionLabel: 'Follow-up question',
+  exampleQuestion: 'What would learners in the target community in Kenya pay for mobile data?',
   guideLabel: 'How to use this tool',
   guideSteps: [
     {
@@ -56,8 +58,8 @@ export const c = {
       body: 'View each indicator separately and follow its changes over time.',
     },
     {
-      title: 'Check sources and save questions',
-      body: 'Read definitions and missing-data notes, then record what to investigate next.',
+      title: 'Plan local research',
+      body: 'Choose a follow-up question, then record your plan and findings.',
     },
   ],
   exampleHelp: 'New here? Open a ready-made comparison of three countries using 2022 data.',
@@ -71,7 +73,6 @@ export const c = {
   countryCount: 'Countries & economies',
   observedCount: 'Reported observations',
   period: 'Observation period',
-  snapshot: 'Official statistics snapshot',
   annual: 'Annual data · not live conditions',
   fetched: 'Collection completed (UTC)',
   reviewed: 'Metadata reviewed',

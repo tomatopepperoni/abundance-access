@@ -7,11 +7,21 @@ import {
   type InvestigationTopic,
 } from '../lib/investigation';
 
-export function NextInvestigation({ onStart }: { onStart: (topic: InvestigationTopic) => void }) {
+export function NextInvestigation({
+  measure,
+  year,
+  onStart,
+}: {
+  measure: string;
+  year: number;
+  onStart: (topic: InvestigationTopic) => void;
+}) {
   return (
-    <section className="panel next-investigation" aria-labelledby="next-investigation-title">
-      <h2 id="next-investigation-title">{p.nextTitle}</h2>
-      <p>{p.nextBody}</p>
+    <section className="next-investigation" aria-labelledby="next-investigation-title">
+      <div className="next-investigation-copy">
+        <h2 id="next-investigation-title">{p.nextTitle}</h2>
+        <p>{p.nextBody(measure, year)}</p>
+      </div>
       <div className="investigation-topics">
         {investigationTopicSchema.options.map((topic) => (
           <button key={topic} className="button outline" onClick={() => onStart(topic)}>
@@ -51,7 +61,12 @@ export function InvestigationFields({
     );
   const patch = (change: Partial<Investigation>) => onChange({ ...value, ...change });
   return (
-    <fieldset className="investigation-fields" data-testid="investigation-plan">
+    <fieldset
+      id="investigation-plan"
+      className="investigation-fields"
+      data-testid="investigation-plan"
+      tabIndex={-1}
+    >
       <legend>{p.planTitle}</legend>
       <p className="small muted">{p.planBody}</p>
       <label>

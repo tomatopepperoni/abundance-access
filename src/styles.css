@@ -266,14 +266,33 @@
   }
 }
 .next-investigation {
-  padding: 20px;
-  border-left: 4px solid var(--teal);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 14px 20px;
+  background: #e8f3ec;
+  border-block: 1px solid #c4dacb;
+}
+.next-investigation-copy {
+  flex: 1 1 220px;
+  min-width: 0;
 }
 .next-investigation h2 {
-  font-size: 21px;
+  font-size: 18px;
+  line-height: 1.35;
 }
-.next-investigation > p {
-  margin-block: 6px 14px;
+.next-investigation p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+}
+#investigation-plan {
+  scroll-margin-top: 16px;
+}
+#investigation-plan:focus {
+  outline: 3px solid var(--teal);
+  outline-offset: 3px;
 }
 .investigation-topics {
   display: flex;
@@ -941,20 +960,6 @@ details[open] > summary {
   gap: 25px;
   align-items: center;
   margin-top: 26px;
-}
-.hero-provenance {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 7px;
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 16px;
-}
-.hero-provenance > span:last-child {
-  margin-left: 5px;
-  padding-left: 10px;
-  border-left: 1px solid var(--line);
 }
 .button {
   display: inline-flex;
@@ -2966,15 +2971,16 @@ tbody tr:last-child > td {
 }
 .hero {
   grid-template-columns: minmax(0, 1fr);
-  gap: 0;
+  gap: 24px;
   padding-top: 36px;
   padding-bottom: 28px;
 }
 .hero h1 {
-  max-width: 27ch;
-  font-size: clamp(2.25rem, 3.2vw, 2.75rem);
-  line-height: 1.2;
-  letter-spacing: -1.1px;
+  max-width: 18ch;
+  font-size: clamp(2.25rem, 4vw, 3.6rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
   margin: 12px 0 18px;
 }
 .hero h1 em {
@@ -2984,18 +2990,21 @@ tbody tr:last-child > td {
   letter-spacing: inherit;
 }
 .hero-copy > p {
-  max-width: 78ch;
-  font-size: 16px;
-  line-height: 1.75;
+  max-width: 49ch;
+  font-size: 17px;
+  line-height: 1.65;
 }
 .hero-actions {
   flex-wrap: wrap;
   gap: 16px 24px;
   margin-top: 22px;
 }
-.hero-provenance {
-  font-size: 12px;
-  gap: 8px;
+@media (min-width: 1180px) {
+  .hero {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+    gap: clamp(24px, 3.6vw, 54px);
+    padding-block: 42px 30px;
+  }
 }
 .panel-heading p,
 .page-heading > p,
@@ -3148,15 +3157,71 @@ thead th {
 .chart-scroll .trend-svg {
   min-width: 700px;
 }
-.purpose-summary {
-  max-width: 80ch;
-  margin: 20px 0 0;
-  padding: 14px 18px;
-  border-left: 3px solid var(--teal);
-  background: #eef3e9;
-  color: #52675a;
+.example-preview {
+  min-width: 0;
+  width: 100%;
+  padding: clamp(18px, 2.4vw, 30px);
+  border: 1px solid #235c49;
+  border-radius: 16px;
+  background: #133e32;
+  color: #fff;
+}
+.example-preview h2 {
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.2;
+}
+.example-preview-source {
+  margin-top: 5px;
+  color: #cfe6d8;
+  font-size: 13px;
+}
+.example-preview dl {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+.example-preview dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 8px;
+  align-items: baseline;
+}
+.example-preview dt {
+  font-size: 14px;
+}
+.example-preview dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.example-preview .example-preview-bar {
+  grid-column: 1 / -1;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: #447260;
+}
+.example-preview-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #a8e6bd;
+}
+.example-preview-question {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #65907d;
+}
+.example-preview-question strong {
+  color: #b9edcc;
+  font-size: 13px;
+  font-weight: 650;
+}
+.example-preview-question p {
+  margin-top: 3px;
   font-size: 15px;
-  line-height: 1.75;
+  line-height: 1.55;
 }
 .start-guide {
   margin: 26px 0 8px;
@@ -3284,9 +3349,6 @@ thead th {
   .hero-actions > .button {
     width: 100%;
   }
-  .hero-provenance {
-    font-size: 12px;
-  }
   .filter-fields label {
     min-width: 0;
     flex-basis: 100%;
@@ -3368,9 +3430,6 @@ thead th {
   }
   .note-fields textarea {
     font-size: 16px;
-  }
-  .purpose-summary {
-    padding: 12px 15px;
   }
 }
 

@@ -1,6 +1,6 @@
 export const investigationCopy = {
   nextTitle: 'Choose what to investigate next',
-  nextBody: 'National averages leave local questions open. Start a short investigation plan.',
+  nextBody: (measure: string, year: number) => `Starting evidence · ${measure} · ${year}`,
   started:
     'Investigation plan started. Specify the intended learners, locality and evidence to check.',
   blocked:

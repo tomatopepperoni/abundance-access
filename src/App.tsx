@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import snapshotUrl from '../data/snapshots/latest.json?url';
 import { snapshotSchema } from './lib/schema';
-import { createStore, definitions } from './lib/query';
+import { createStore, definitions, formatValue, observation } from './lib/query';
 import type { DataStore } from './lib/query';
 import {
   addDraftNote,
@@ -45,6 +45,11 @@ import { SidebarResizer } from './components/SidebarResizer';
 import { sidebarCopy } from './content/sidebar-en';
 
 type View = keyof typeof c.nav;
+const exampleSelection: Selection = {
+  countryCodes: ['KOR', 'IND', 'KEN'],
+  indicatorCode: 'IT.NET.USER.ZS',
+  year: 2022,
+};
 const SIDEBAR_COLLAPSED_KEY = 'abundance-access:sidebar-collapsed:v1';
 const views = Object.keys(c.nav) as View[];
 const readView = (): View =>
@@ -112,6 +117,36 @@ function Brand() {
     </span>
   );
 }
+
+function ExamplePreview({ store }: { store: DataStore }) {
+  const { countryCodes, indicatorCode, year } = exampleSelection;
+  if (!countryCodes.every((code) => store.countryByCode.has(code))) return null;
+  return (
+    <section className="example-preview" aria-labelledby="example-preview-title">
+      <h2 id="example-preview-title">{c.exampleTitle}</h2>
+      <p className="example-preview-source">{c.exampleSource}</p>
+      <dl>
+        {countryCodes.map((code) => {
+          const row = observation(store, code, indicatorCode, year);
+          return (
+            <div key={code}>
+              <dt>{row.countryName}</dt>
+              <dd>{formatValue(row.value)}</dd>
+              <dd className="example-preview-bar" aria-hidden="true">
+                <span style={{ width: `${row.value ?? 0}%` }} />
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      <div className="example-preview-question">
+        <strong>{c.exampleQuestionLabel}</strong>
+        <p>{c.exampleQuestion}</p>
+      </div>
+    </section>
+  );
+}
+
 function Dashboard({ store }: { store: DataStore }) {
   const layout = useRef<HTMLDivElement>(null);
   const resetDialog = useRef<HTMLDialogElement>(null);
@@ -247,27 +282,29 @@ function Dashboard({ store }: { store: DataStore }) {
     setResearch((previous) => replaceComparisonCountry(previous, oldCode, newCode, store.snapshot));
     setNotice('');
   };
-  const navigate = (next: View, focusCountrySearch = false) => {
+  const navigate = (next: View, focus?: 'country-search' | 'investigation-plan') => {
     setView(next);
     window.location.hash = next;
     setNavOpen(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
     requestAnimationFrame(() => {
-      const search = focusCountrySearch
-        ? document.querySelector<HTMLInputElement>('.map-country-finder input[type="search"]')
-        : null;
-      (search ?? document.getElementById('main-content'))?.focus({ preventScroll: true });
-      search?.scrollIntoView({ block: 'center', behavior: 'instant' });
+      const target =
+        focus === 'country-search'
+          ? document.querySelector<HTMLInputElement>('.map-country-finder input[type="search"]')
+          : focus === 'investigation-plan'
+            ? document.getElementById('investigation-plan')
+            : null;
+      (target ?? document.getElementById('main-content'))?.focus({ preventScroll: true });
+      target?.scrollIntoView({
+        block: focus === 'country-search' ? 'center' : 'start',
+        behavior: 'instant',
+      });
     });
   };
   const openExample = () => {
     setResearch((previous) => ({
       ...previous,
-      selection: {
-        countryCodes: ['KOR', 'IND', 'KEN'],
-        indicatorCode: 'IT.NET.USER.ZS',
-        year: 2022,
-      },
+      selection: exampleSelection,
       search: '',
       region: 'all',
     }));
@@ -348,7 +385,7 @@ function Dashboard({ store }: { store: DataStore }) {
         : next,
     );
     setNotice(investigation.started);
-    navigate('notes');
+    navigate('notes', 'investigation-plan');
   };
   const title =
     view === 'overview'
@@ -592,13 +629,8 @@ function Dashboard({ store }: { store: DataStore }) {
                       <Icon name="arrow" size={16} />
                     </button>
                   </div>
-                  <p className="purpose-summary">{c.heroLimit}</p>
                 </div>
-                <div className="hero-provenance">
-                  <Icon name="database" size={14} />
-                  <span>{c.snapshot}</span>
-                  <span>World Bank · WDI</span>
-                </div>
+                <ExamplePreview store={store} />
               </section>
               <section className="start-guide" aria-label={c.guideLabel}>
                 <ol>
@@ -693,7 +725,9 @@ function Dashboard({ store }: { store: DataStore }) {
               research={research}
               onSelection={select}
               onToggle={toggle}
-              onNavigate={(next) => navigate(next, next === 'explore')}
+              onNavigate={(next) =>
+                navigate(next, next === 'explore' ? 'country-search' : undefined)
+              }
               onExport={onExport}
               onInvestigate={investigate}
               onRecordSummary={recordSummary}

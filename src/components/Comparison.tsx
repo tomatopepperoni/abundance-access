@@ -139,6 +139,11 @@ export function Comparison({
                 </section>
               ))}
             </div>
+            <NextInvestigation
+              measure={def.shortName}
+              year={selection.year}
+              onStart={onInvestigate}
+            />
             <CommonYearControl
               store={store}
               selection={selection}
@@ -220,7 +225,6 @@ export function Comparison({
             <p className="chart-limit">{def.limitation}</p>
           </section>
           <CalculatedComparison store={store} selection={selection} onRecord={onRecordSummary} />
-          <NextInvestigation onStart={onInvestigate} />
           <TrendChart store={store} selection={selection} />
           <section className="panel latest-panel">
             <div className="panel-heading">

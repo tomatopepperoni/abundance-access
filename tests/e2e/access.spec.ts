@@ -52,18 +52,29 @@ test('clear introduction and example comparison preserve research notes and use 
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: 'Compare internet, electricity and education by country.',
+      name: 'Compare countries. Plan what to investigate.',
     }),
   ).toBeVisible();
+  const preview = page.getByRole('region', { name: 'Internet use in 2022', exact: true });
+  await expect(preview).toContainText('World Bank');
+  await expect(preview).toContainText(/Kenya[^?]*\?/);
+  for (const code of ['KOR', 'IND', 'KEN']) {
+    await expect(
+      preview.getByText(display(sourceValue(code, 'IT.NET.USER.ZS', 2022)), { exact: true }),
+    ).toBeVisible();
+  }
   await expect(page.locator('.start-guide li')).toHaveCount(3);
   await expect(page.locator('.dataset-dots')).toHaveCount(0);
   expect(
     await page.locator('body').evaluate((e) => parseFloat(getComputedStyle(e).fontSize)),
   ).toBeGreaterThanOrEqual(16);
   await audit(page);
-  await page
-    .getByRole('button', { name: 'Try Korea, India and Kenya (2022)', exact: true })
-    .click();
+  const example = page.getByRole('button', {
+    name: 'Try Korea, India and Kenya (2022)',
+    exact: true,
+  });
+  await expect(example).toBeInViewport();
+  await example.click();
   await expect(page).toHaveURL(/#compare$/);
   await expect(page.getByRole('combobox', { name: 'Observation year', exact: true })).toHaveValue(
     '2022',
@@ -75,17 +86,36 @@ test('clear introduction and example comparison preserve research notes and use 
   await expect(page.locator('.comparison-scope')).toContainText('Up to 3 countries');
   await expect(page.locator('.research-guide')).toContainText('not established findings');
   await expect(page.locator('.research-guide')).toContainText('these three indicators only');
-  await expect(page.locator('.measures-panel')).toContainText('can exceed 100%');
+  const measures = page.locator('.measures-panel');
+  await expect(measures).toContainText('can exceed 100%');
+  const followUp = measures.getByRole('region', {
+    name: 'Choose what to investigate next',
+    exact: true,
+  });
+  await expect(followUp).toContainText('Starting evidence · Internet use · 2022');
   expect(
-    await page
-      .locator('.measures-panel')
-      .evaluate((element) =>
-        Boolean(
-          element.compareDocumentPosition(document.querySelector('.same-year')!) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
+    await followUp.evaluate((element) => {
+      const comesBefore = (a: Element, b: Element) =>
+        Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return {
+        afterDesktopMatrix: comesBefore(
+          document.querySelector('.comparison-matrix-table')!,
+          element,
         ),
-      ),
-  ).toBe(true);
+        afterMobileMatrix: comesBefore(
+          document.querySelector('.mobile-comparison-matrix')!,
+          element,
+        ),
+        beforeCoverage: comesBefore(element, document.querySelector('.comparison-completeness')!),
+        beforeChart: comesBefore(element, document.querySelector('.same-year')!),
+      };
+    }),
+  ).toEqual({
+    afterDesktopMatrix: true,
+    afterMobileMatrix: true,
+    beforeCoverage: true,
+    beforeChart: true,
+  });
   const controlSize = await page
     .getByRole('combobox', { name: 'Observation year', exact: true })
     .evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
@@ -186,9 +216,8 @@ test('real-data country selection → same-year comparison → notebook → expo
   );
   await page.goto('./#overview');
   await expect(
-    page.getByRole('heading', { name: 'Compare internet, electricity and education by country.' }),
+    page.getByRole('heading', { name: 'Compare countries. Plan what to investigate.' }),
   ).toBeVisible();
-  await expect(page.getByText('Official statistics snapshot', { exact: true })).toBeVisible();
   await mkdir('reports/screenshots', { recursive: true });
   await page.screenshot({
     path: `reports/screenshots/${testInfo.project.name}-access-overview.png`,
@@ -279,7 +308,7 @@ test('real-data country selection → same-year comparison → notebook → expo
   await resetDialog(page);
   await dialog.getByRole('button', { name: 'Reset workspace', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Compare internet, electricity and education by country.' }),
+    page.getByRole('heading', { name: 'Compare countries. Plan what to investigate.' }),
   ).toBeVisible();
   await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), key)).toBeNull();
   expect(await page.evaluate(() => localStorage.getItem('abundance-pathways:profile:v1'))).toBe(
